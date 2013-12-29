@@ -18,6 +18,9 @@ class OmfDb extends OmfBase {
 	public function _objects_name(){
 		return "omf_object";
 	}
+	public function _index_name(){
+		return "omf_index";
+	}
 	public function _relationship_name(){
 		return "omf_relationship";
 	}
@@ -52,6 +55,46 @@ class OmfDb extends OmfBase {
 					array(":cn"=>$classname))
 			->queryRow()) return (1*$row['counter']);
 		return 0;
+	}
+	public function insertIndex($classname, $metaname, $hashvalue, $object_id){
+		$this->getDb()->createCommand()->insert($this->_index_name(),array(
+			'classname'=>$classname,'metaname'=>$metaname,
+				'hashvalue'=>$hashvalue, 'object_id'=>$object_id));
+	}
+	public function updateIndex($classname, $metaname, $hashvalue, $object_id){
+		$this->getDb()->createCommand()->update($this->_index_name(),array(
+			"hashvalue"=>$hashvalue),
+			"classname=:cn and metaname=:mn and object_id=:id",
+			array(":cn"=>$classname,":mn"=>$metaname,":id"=>$object_id));
+	}
+	public function countIndex($classname, $metaname, $hashvalue){
+		$r = $this->getDb()->createCommand()->select('count(object_id) as cnt')
+		->from($this->_index_name())
+		->where("classname=:cn and metaname=:mn and hashvalue=:hv"
+			,array(':cn'=>$classname,':mn'=>$metaname,':hv'=>$hashvalue))
+		->queryRow();
+		if($r) return 1*($r['cnt']);
+		return 0;
+	}
+	public function findIndex($classname, $metaname, $hashvalue, $offset=0, $limit=-1){
+		return $this->getDb()->createCommand()->select('object_id')
+		->from($this->_index_name())
+		->where("classname=:cn and metaname=:mn and hashvalue=:hv"
+			,array(':cn'=>$classname,':mn'=>$metaname,':hv'=>$hashvalue))
+		->offset($offset)
+		->limit($limit)
+		->queryAll();
+	}
+	public function findIndexValue($classname, $metaname, $object_id){
+		if($r = $this->getDb()->createCommand()
+			->select('hashvalue')
+			->from($this->_index_name())
+			->where("classname=:cn and metaname=:mn and object_id=:id",
+			array(":cn"=>$classname,":mn"=>$metaname,":id"=>$object_id))
+			->queryRow()){
+			return $r['hashvalue'];		
+		}else
+		return null;
 	}
 	public function setObjectData($object_id, $data){
 		return $this->getDb()->createCommand()

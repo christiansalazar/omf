@@ -139,6 +139,11 @@ abstract class OmfBase extends CApplicationComponent {
 
 	abstract public function deleteObjById($object_id);
 	abstract public function deleteObjByClassname($classname);
+	abstract public function insertIndex($classname, $metaname, $hashvalue, $object_id);
+	abstract public function updateIndex($classname, $metaname, $hashvalue, $object_id);
+	abstract public function countIndex($classname, $metaname, $hashvalue);
+	abstract public function findIndex($classname, $metaname, $hashvalue, $offset=0, $limit=-1);
+	abstract public function findIndexValue($classname, $metaname, $object_id);
 
 	/**
 	 * create 
@@ -173,6 +178,24 @@ abstract class OmfBase extends CApplicationComponent {
 		while($this->countObjectsByClassname($classname) > 0)
 			foreach($this->listObjects($classname,1000) as $row)
 				$this->deleteObject($row['id']);
+	}
+
+	/**
+	 * setIndex 
+	 *	save a value in the index database. 
+	 * @param mixed $classname the object_id classname
+	 * @param mixed $metaname  the property name of this object_id to be saved
+	 * @param mixed $metavalue the property value of this object_id to be saved
+	 * @param mixed $object_id the object whos remaining attributes belongs to.
+	 * @access public
+	 * @return void
+	 */
+	public function setIndex($classname, $metaname, $metavalue, $object_id){
+		$hv = hash('md5',$metavalue);
+		if($hv != $this->findIndexValue($classname, $metaname, $object_id)){
+			$this->insertIndex($classname, $metaname,$hv, $object_id);
+		}else
+			$this->updateIndex($classname, $metaname,$hv, $object_id);
 	}
 
 	/**
@@ -404,6 +427,8 @@ abstract class OmfBase extends CApplicationComponent {
 				$newobj = $this->create("metadata", $metavalue, $object_id);
 				$this->createRel($object_id, $newobj[0], $_metaname, "");
 			}
+			list($p_id, $p_classname) = $this->loadObject($object_id);
+			$this->setIndex($p_classname, $_metaname, $metavalue, $object_id);
 		}
 	}
 
@@ -442,6 +467,26 @@ abstract class OmfBase extends CApplicationComponent {
 			$names[] = $purename;
 		}
 		return $names;
+	}
+
+	/**
+	 * find 
+	 * 	find an object by its classname, metaname and metavalue using the index
+	 *	
+	 * @param mixed $classname 
+	 * @param mixed $meta_name 
+	 * @param mixed $meta_value 
+	 * @access public
+	 * @return array array(omf_object,..., N) each one having a matching property
+	 */
+	public function find($classname,$meta_name,$meta_value,
+		$offset=0,$limit=-1){
+		$r = array();
+		foreach($this->findIndex(
+			$classname, $this->buildMetanameRel($meta_name),
+				hash('md5',$meta_value),$offset, $limit) as $row)
+					$r[] = $this->loadObject($row['object_id']);
+		return $r;
 	}
 
 	/*

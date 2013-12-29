@@ -5,6 +5,7 @@ class OmfTest extends OmfDb {
 	}
 	public function run(){
 		$this->testlowlevelobjectapi();	
+		$this->testlowlevelindexapi();
 		$this->testlowlevelrelationsapi();
 		$this->testhighlevelcoreapi();
 		$this->testhighlevelmetaapi();
@@ -56,6 +57,35 @@ class OmfTest extends OmfDb {
 		}
 		$objects = $this->listObjects('test');
 		if(count($objects) != 0) throw new Exception("listObjects fails. objects not deleted.");
+		printf("OK\n");
+	}
+	public function testlowlevelindexapi(){
+		printf("[".__METHOD__."] ... ");
+		$this->getDb()->createCommand()->delete("omf_index");
+		$hv = hash('md5','test');
+		$hv2 = hash('md5','test2');
+		$a = $this->createObject("test");
+		$b = $this->createObject("test");
+		$c = $this->createObject("test");
+
+		$this->insertIndex('test', 't1', $hv, $a);
+		$_hv = $this->findIndexValue('test', 't1', $a);
+		if($_hv != $hv) throw new Exception("findIndexValue must return: ".$hv.", instead returns: ".$_hv);
+		$objects = $this->findIndex('test', 't1', $hv);
+		if(count($objects) != 1) throw new Exception("must be 1");
+		if($objects[0]['object_id'] != $a) throw new Exception("must be ".$a);
+
+		$this->updateIndex('test', 't1', $hv2, $a);
+		$_hv2 = $this->findIndexValue('test', 't1', $a);
+		if($_hv2 != $hv2) throw new Exception("findIndexValue must return: ".$hv2.", instead returns: ".$_hv2);
+		
+		$this->getDb()->createCommand()->delete("omf_index");
+		$this->insertIndex('test', 't1' , $hv, $a);	
+		$this->insertIndex('test', 't1' , $hv, $b);	
+		$this->insertIndex('test', 't1' , $hv, $c);
+		if(3 != $this->countIndex('test', 't1', $hv)) throw new Exception("must be 3");
+
+		$this->getDb()->createCommand()->delete("omf_index");
 		printf("OK\n");
 	}
 	public function testlowlevelrelationsapi(){
@@ -306,9 +336,42 @@ class OmfTest extends OmfDb {
 		if('456' != $this->get($a,'t2')) throw new Exception("must be 456");
 		$this->deleteObject($a);
 
+		$this->getDb()->createCommand()->delete("omf_index");
+		list($a)  = $this->create("test");
+		$this->set($a, array("t1"=>'123', "t2"=>'456'));
+		$v1 = $this->findIndexValue("test",$this->buildMetanameRel("t1"),$a);
+		if($v1 != hash("md5","123")) throw new Exception("must be 123");
+		$v2 = $this->findIndexValue("test",$this->buildMetanameRel("t2"),$a);
+		if($v2 != hash("md5","456")) throw new Exception("must be 456");
+		$this->deleteObject($a);
+
+		$this->getDb()->createCommand()->delete("omf_index");
+		list($a)  = $this->create("test");
+		$this->set($a, array("t1"=>'123', "t2"=>'456'));
+		list($b)  = $this->create("test");
+		$this->set($b, array("t1"=>'123', "t2"=>'789'));
+		list($c)  = $this->create("test");
+		$this->set($c, array("t1"=>'222', "t2"=>'012'));
+
+		$r = $this->find("test","t1","123");
+		if(count($r) != 2) throw new Exception("must be 2. ");
+		if($this->get($r[0][0],"t1") != "123") throw new Exception("must be 123");
+		if($this->get($r[1][0],"t1") != "123") throw new Exception("must be 123");
+		$r = $this->find("test","t2","789");
+		if(count($r) != 1) throw new Exception("must be 1");
+		if($this->get($r[0][0],"t2") != "789") throw new Exception("must be 789");
+		$r = $this->find("test","t1","789");
+		if(count($r) != 0) throw new Exception("must be 0");
+		$r = $this->find("test","t1","999");
+		if(count($r) != 0) throw new Exception("must be 0");
+
+		$this->deleteObject($a);
+		$this->deleteObject($b);
+		$this->deleteObject($c);
+
 		$this->deleteObjects("test");
 		$this->deleteObjects("metadata");
-
+		//$this->getDb()->createCommand()->delete("omf_index");
 		printf("OK\n");
 	}
 }
