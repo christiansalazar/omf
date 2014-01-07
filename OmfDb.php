@@ -2,7 +2,8 @@
 /**
  * OmfDb 
  *	 please install db tables using the provided sql scripts located at the same file directory.
- *	
+ *
+ *	 this class must be used as direct intance either or as yii component.
  * 
  * @uses OmfBase
  * @abstract	
