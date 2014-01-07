@@ -103,6 +103,15 @@ now using getters:
 	$must_be_yellow = $api->get($a, 'color');
 	$must_be_7 = $api->get($a, 'dogs');
 
+finding objects:
+
+	// find an object of class 'test' by searching for its metadata 'firstname' having the value 'christian':
+	// it uses a index to enhance the search process.
+	$must_be_a = $api->find("test","firstname","christian");
+
+[read more about how the find method uses an index to enhance a search](https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948s "https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948s a Yii Framework Component, in your config/main.php file add a component")
+
+
 to delete instances:
 
 	$this->deleteObject($a); // will delete related metadata too
