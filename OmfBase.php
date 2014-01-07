@@ -151,7 +151,7 @@ abstract class OmfBase extends CApplicationComponent {
 	 *	relationship named 'parent' between the parent and this instance
 	 * 
 	 * @param string $classname the class name, ie: 'contact' 
-	 * @param string $data 
+	 * @param string $data user data to be stored into this object (mysql persistence model store it as a BLOB) 
 	 * @param string $aux_id an attached ID
 	 * @param integer $parent_id The ID of the parent object (optional)
 	 * @access public

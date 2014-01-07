@@ -50,7 +50,7 @@ the following are a resume of the common usage api methods:
 $api can be: Yii::app()->omf or: $api = new OmfDb();
 
 	list($a)  = $api->create("test"); // create object of class 'test'
-	list($b)  = $api->create("test", "", "", $a); // b is parent of a
+	list($b)  = $api->create("test", "", "", $a); // b is parent of a. see note.
 	list($c)  = $api->create("test"); // c is not a parent of a nither b
 	list($d)  = $api->create("test"); // d is not a parent of a nither b
 	$api->createRelation($a, $b, "somerelname");  
@@ -58,7 +58,24 @@ $api can be: Yii::app()->omf or: $api = new OmfDb();
 	$api->createRelation($a, $c, "somerelname");  
 	$api->createRelation($a, $d, "another");  
 
-list $a child objects having a relationship named 'somerelname' and being an instance of 'test'
+when you create a object as a child of another distinct one, let me say in this form:
+
+	list($a) = $api->create('test');
+	list($b) = $api->create('test',"","",$a);
+
+then automatically the framework will create a relationship object named 'parent'
+between this two objects:
+
+	A---parent--->B
+
+you can also create your own relationships:
+
+	A--parent-->B
+	A--somerelname-->B
+	A--somerelname-->C
+
+list all child objects of A, having a relationship named 'somerelname' and being an instance of 'test'.
+this can be done too by calling the listRelations method, see later by specifying a 'forward' query mode.
 
 	$a_childs = $api->getChilds($a, "somerelname", "test");
 	list($b_id, $classname_b, $aux0, $data0) = $a_childs[0];  // this must be B
