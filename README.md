@@ -4,9 +4,16 @@ Object Modeling Framework (OMF)
 As it name sugest it, is a framework for handling objects and the relationships between them. You can build
 an entire system using purely this framework.  
 
-#USAGE
+**USAGE**
 
-As a Yii Framework Component, in your config/main.php file add a component 
+The OMF Framework is currently designed to have a persistence model, 
+in this case MYSQL but can be another distinct one. The component involved
+in persist your objects into a MySQL database is named: OmfDb, this
+readme file is targeted to help you in install this component as a
+Yii Framwork Component, but you can use it in a non-yii platform with
+little changes.
+
+Installation in your config/main:
 
 	'import'=>array(
 		'application.models.*',
@@ -18,6 +25,14 @@ As a Yii Framework Component, in your config/main.php file add a component
 		'omf'=>array('class'=>'application.extensions.OmfDb'),
 	),
 
+Database:
+
+When using the DB version (the unique one right now) then you are required to
+install the sql script provided in this package.  This OMF framework will
+persist all objects in this single storage. It uses MYSQL. can be ported.
+
+Api Usage:
+
 Now you can use this object by calling:
 
 	$object_id = Yii::app()->omf->create('MyClassName');
@@ -27,7 +42,7 @@ or by direct instance:
 	$api = new OmfDb();
 	$object_id = $api->create('MyClassName');
 
-#QUICK API RESUME
+**QUICK API RESUME**
 
 You are required to check in detail the provided source code for api details on each method.
 the following are a resume of the common usage api methods:
