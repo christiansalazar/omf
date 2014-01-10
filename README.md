@@ -120,7 +120,12 @@ now using getters:
 	$must_be_yellow = $api->get($a, 'color');
 	$must_be_7 = $api->get($a, 'dogs');
 
-finding objects:
+finding objects by its primary ID:
+
+	$a = $api->loadObject($id);
+	list($_id, $_classname, $_auxid, $_data) = $a;
+
+finding objects by its metadata:
 
 	// find an object of class 'test' by searching for its metadata 'firstname' having the value 'christian':
 	// it uses a index to enhance the search process.

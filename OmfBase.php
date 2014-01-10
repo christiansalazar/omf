@@ -386,6 +386,21 @@ abstract class OmfBase extends CApplicationComponent {
 		}
 		return $objects;
 	}
+	
+	/**
+	 * getParent
+	 *	(HELPER) returns the parent object of $obj using the relationship named 'parent'
+	 *	you can create a child object by calling: create($a,"","",$b) (a is child of b)
+	 *	then you can call: $must_be_a = api->getParent($b);
+	 * 
+	 * @access public
+	 * @return omf_object or null if it has no parents
+	 */
+	public function getParent($obj){
+		foreach($this->getParents($obj,"parent") as $p)
+			return $p; // maybe has more than one parent, but return the first one
+		return null; // has no parents
+	}
 
 	/**
 	 * set 
