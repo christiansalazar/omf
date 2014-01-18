@@ -1,8 +1,27 @@
 Object Modeling Framework (OMF)
 ==============================
 
-As it name sugest it, is a framework for handling objects and the relationships between them. You can build
-an entire system using purely this framework.  
+OMF is a framework for handle and persist objects, properties and 
+relationships between them having an abstract and unique persistence model for 
+all objects leaving you off the traditional data models.
+
+OMF is designed to be implemented in ANY php platform, currently this version 
+has been tested over YiiFramework but can be exported to a non-yii platform 
+without issues.
+
+OMF is not dependent on a persistence model implemented to store data,
+and in consecuence you can move your entire system from one place to 
+another distinct one without issues.
+
+OMF helps you to persist and handle objects, properties and relationships 
+in realtime, so make changes in your business logic without to worry about 
+how the persistence will impact your storage design.
+
+**Spanish speakers doc**
+
+[http://trucosdeprogramacionmovil.blogspot.com/2014/01/omf-object-modeling-framework.html](http://trucosdeprogramacionmovil.blogspot.com/2014/01/omf-object-modeling-framework.html "tutorial de omf en español")
+
+Twitter: @salazarchris74
 
 **USAGE**
 
