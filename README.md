@@ -23,6 +23,10 @@ how the persistence will impact your storage design.
 
 Twitter: @salazarchris74
 
+**OMF CLASS DIAGRAM**
+
+![Class Diagram][1]
+
 **USAGE**
 
 The OMF Framework is currently designed to have a persistence model, 
@@ -150,8 +154,9 @@ finding objects by its metadata:
 	// it uses a index to enhance the search process.
 	$must_be_a = $api->find("test","firstname","christian");
 
-[read more about how the find method uses an index to enhance a search](https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948s "https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948s a Yii Framework Component, in your config/main.php file add a component")
+About indexes:
 
+[read more about how the find method uses an index to enhance a search](https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948 "https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948 a Yii Framework Component, in your config/main.php file add a component")
 
 to delete instances:
 
@@ -167,4 +172,4 @@ Christian Salazar H. <christiansalazarh@gmail.com>
 
 [http://opensource.org/licenses/bsd-license.php](http://opensource.org/licenses/bsd-license.php "http://opensource.org/licenses/bsd-license.php")
 
-
+[1]:https://github.com/christiansalazar/omf/blob/master/omf-class-diagram-1.jpg?raw=true
