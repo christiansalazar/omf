@@ -49,6 +49,60 @@ class OmfDb extends OmfBase {
 			->limit($limit)
 			->queryAll();
 	}
+	/**
+	 * listObjectsBy 
+	 *	return objects having a key attribute.
+	 *	
+	 *	return values:
+	 *		integer >= 0, when calling with counter_only = true, never null
+	 *		array, never null when calling with counter_only = false
+	 * 
+	 * @param mixed $classname 
+	 * @param mixed $attribute 
+	 * @param mixed $value 
+	 * @param mixed $limit 
+	 * @param int $offset 
+	 * @param mixed $counter_only 
+	 * @access public
+	 * @return mixed see note
+	 */
+	public function listObjectsBy($classname, $attribute, $value, $limit=-1, $offset=0, $counter_only=false){
+		//	remember the metadata architecture in OMF
+		//
+		//	[A:Someclass]----[metaname_attributenme]--->[:Metadata{data=value}]
+		//		parent    								   child
+		//
+		//	this equivalent to say:  A.attributename = value
+		//
+		$fields = 'obj.id, obj.classname, obj.aux_id, obj.data';
+		if($counter_only===true) $fields = "count(obj.id) as counter";
+		$relname = $this->buildMetanameRel($attribute);
+		if($counter_only===true){
+			$row = $this->getDb()->createCommand()
+			->select($fields)
+			->from($this->_objects_name()." obj")
+			->leftjoin($this->_relationship_name()." R","R.parent = obj.id")
+			->leftjoin($this->_objects_name()." C","R.child = C.id")
+			->where("obj.classname = :cn and R.name = :rn and C.data = :v",
+				array(":cn"=>$classname,":rn"=>$relname,":v"=>$value))
+			->queryRow();
+			if(!$row) return 0;
+			return 1*$row['counter'];
+		}else{
+			$rows = $this->getDb()->createCommand()             	
+			->select($fields)                                  	
+			->from($this->_objects_name()." obj")
+			->leftjoin($this->_relationship_name()." R","R.parent = obj.id")
+			->leftjoin($this->_objects_name()." C","R.child = C.id")
+			->where("obj.classname = :cn and R.name = :rn and C.data = :v",
+				array(":cn"=>$classname,":rn"=>$relname,":v"=>$value))
+			->offset($offset)                                  	
+			->limit($limit)                                    	
+			->queryAll();
+			if(empty($rows)) return array();
+			return $rows;
+		}
+	}
 	public function countObjectsByClassname($classname){
 		if($row = $this->getDb()->createCommand()
 			->select('count(id) counter')

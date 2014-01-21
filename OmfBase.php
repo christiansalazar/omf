@@ -86,6 +86,8 @@ abstract class OmfBase extends CApplicationComponent {
 	 * @return array indexed array array('id','classname','aux_id','data')
 	 */
 	abstract public function listObjects($classname, $limit=-1, $offset=0);
+	abstract public function listObjectsBy($classname, $attribute, $value, 
+		$limit=-1, $offset=0, $counter_only=false);
 
 	/**
 	 * createRel 
@@ -486,22 +488,32 @@ abstract class OmfBase extends CApplicationComponent {
 
 	/**
 	 * find 
-	 * 	find an object by its classname, metaname and metavalue using the index
+	 * 	find an object by its classname, metaname and metavalue.
+	 *	very similar to listObjectsBy but returning omf_objects.
+	 *	options to paginate and return only a counter.
 	 *	
-	 * @param mixed $classname 
-	 * @param mixed $meta_name 
-	 * @param mixed $meta_value 
+	 * @param string $classname having this classname
+	 * @param string $meta_name having the desired property name
+	 * @param string $meta_value having the desired property value
+	 * @param integer $offset offset 
+	 * @param integer $limit how many objects must read
+	 * @param bool $count_only true to return only a row counter
 	 * @access public
 	 * @return array array(omf_object,..., N) each one having a matching property
 	 */
 	public function find($classname,$meta_name,$meta_value,
-		$offset=0,$limit=-1){
-		$r = array();
-		foreach($this->findIndex(
-			$classname, $this->buildMetanameRel($meta_name),
-				hash('md5',$meta_value),$offset, $limit) as $row)
-					$r[] = $this->loadObject($row['object_id']);
-		return $r;
+		$offset=0,$limit=-1,$count_only=false){
+		$objects = array();
+		if($count_only == true){
+			return $this->listObjectsBy($classname,$meta_name, 
+				$meta_value, $limit, $offset, $count_only);
+		}else{
+		foreach($this->listObjectsBy(
+			$classname,$meta_name, $meta_value, 
+				$limit, $offset, $count_only) as $obj)
+			$objects[] = $this->readObject($obj);
+		return $objects;
+		}
 	}
 
 	/*
@@ -529,4 +541,14 @@ abstract class OmfBase extends CApplicationComponent {
 	protected function buildMetanameRel($rel_name){
 		return "metaname_".$rel_name;
 	}
+
+	public function calculatePages($total_items, $items_per_page){
+		$pages = (int)($total_items / $items_per_page);
+		$pages += (((int)($pages * $items_per_page)) !== $total_items);
+		return $pages;
+	}
+	public function calculatePageOffset($items_per_page, $page){
+		return $items_per_page * $page;
+	}
+
 }

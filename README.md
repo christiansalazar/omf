@@ -151,8 +151,26 @@ finding objects by its primary ID:
 finding objects by its metadata:
 
 	// find an object of class 'test' by searching for its metadata 'firstname' having the value 'christian':
-	// it uses a index to enhance the search process.
-	$must_be_a = $api->find("test","firstname","christian");
+	// returns an array of omf_objects
+	list($must_be_a) = $api->find("test","firstname","christian");
+
+pagination options:
+
+	// find all 'Person' having property 'likes_jam' equal to 'yes'
+	// the result can be huge, so lets OMF to paginate it:
+	$items_per_page = 5;
+	$counter = $api->find("Person","likes_jam","yes", null, null, true);
+	// suppose counter is 10000
+	$pages = $api->calculatePages($counter, $items_per_page);
+	// now display page 7
+	$page = 7;
+	$offset = $this->calculatePageOffset($items_per_page,$page);
+	$objects = $api->find("Person","likes_jam","yes",$offset,$items_per_page);
+	// display objects:
+	foreach($objects as $obj){
+		list($id, $classname, $aux_id, $data) = $obj;
+		// do something
+	}
 
 About indexes:
 

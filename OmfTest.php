@@ -9,6 +9,7 @@ class OmfTest extends OmfDb {
 		$this->testlowlevelrelationsapi();
 		$this->testhighlevelcoreapi();
 		$this->testhighlevelmetaapi();
+		$this->testlist();
 	}
 	public function testlowlevelobjectapi(){
 		printf("[".__METHOD__."] ... ");
@@ -372,6 +373,94 @@ class OmfTest extends OmfDb {
 		$this->deleteObjects("test");
 		$this->deleteObjects("metadata");
 		//$this->getDb()->createCommand()->delete("omf_index");
+		printf("OK\n");
+	}
+	public function testlist(){
+		printf("[".__METHOD__."] ... ");
+		$this->deleteObjects("test");
+		$this->deleteObjects("metadata");
+		
+		$n1 = 10;
+		$n2 = 100;
+
+		// keeps a list of reincident values, counters per value
+		$a = array();
+		for($i=0;$i<$n1;$i++)
+			$a[$i] = 0;
+		// a fixed list to be used for comparison
+		$stor=array();
+		// create objects, having an attribute named 'x' having value
+		// that value stored and counted in $a for future comparison
+		for($i=0;$i<$n2;$i++){
+			list($id) = $this->create('test');
+			$v = rand(0,$n1-1);
+			$a[$v]++;
+			$this->set($id, 'x', $v);
+			$stor[$id] = array();
+			$stor[$id]['i'] = $i;
+			$stor[$id]['x'] = $v;
+		}
+		// now compare the results when calling the method
+		foreach($a as $v=>$counter){
+			$counted = $this->listObjectsBy('test','x',$v,null,null,true);
+			if($counted != $counter)
+				throw new Exception(sprintf("value %s was generated %s times "
+					."but listObjects detects: %s",$v,$counter,$counted));
+
+			$objects = $this->listObjectsBy('test','x',$v);
+			$counted = count($objects);
+			if($counted != $counter)
+				throw new Exception(sprintf("value %s was generated %s times "
+					."but listObjects detects: %s",$v,$counter,$counted));
+
+			//test pagination
+			// we have a full objects list, having x=$v in all its items
+			// proceeding to list this objects having x=$v again but with 
+			// pagination, having each page the same items in comparison
+			// to the objects array
+			//
+			$ipp=3;
+			$pages = $this->calculatePages($counted, $ipp);
+			for($page=0;$page<$pages;$page++){
+				$offset = $this->calculatePageOffset($ipp, $page);
+				$paged = $this->listObjectsBy('test','x',$v, $ipp, $offset);
+				$len = count($paged);
+				for($i=0;$i<$len;$i++){
+					list($id1,$cn1,$au1,$da1) = $this->readObject($objects[$offset + $i]);
+					list($id2,$cn2,$au2,$da2) = $this->readObject($paged[$i]);
+					if($id1 !== $id2) throw new Exception("error");
+					if($cn1 !== $cn2) throw new Exception("error");
+					if($au1 !== $au2) throw new Exception("error");
+					if($da1 !== $da2) throw new Exception("error");
+				}
+			}			
+		}
+
+		// test using an inexisting status, so nothing must be returned
+		// must never return null, it will break foreach statements
+		if(0 !== $this->listObjectsBy(null,null,null,0,0,true)) throw new Exception("error");
+		if(0 !== $this->listObjectsBy("test",null,null,0,0,true)) throw new Exception("error");
+		if(0 !== $this->listObjectsBy("test","xx",null,0,0,true)) throw new Exception("error");
+		if(0 !== $this->listObjectsBy("test","x","???",0,0,true)) throw new Exception("error");
+
+		if(null === $this->listObjectsBy(null,null,null)) throw new Exception("error");
+		if(null === $this->listObjectsBy("test",null,null)) throw new Exception("error");
+		if(null === $this->listObjectsBy("test","xx",null)) throw new Exception("error");
+		if(null === $this->listObjectsBy("test","x","???")) throw new Exception("error");
+
+		if(0 !== $this->find(null,null,null,0,0,true)) throw new Exception("error");
+		if(0 !== $this->find("test",null,null,0,0,true)) throw new Exception("error");
+		if(0 !== $this->find("test","xx",null,0,0,true)) throw new Exception("error");
+		if(0 !== $this->find("test","x","???",0,0,true)) throw new Exception("error");
+
+		if(null === $this->find(null,null,null,0,0,false)) throw new Exception("error");
+		if(null === $this->find("test",null,null,0,0,false)) throw new Exception("error");
+		if(null === $this->find("test","xx",null,0,0,false)) throw new Exception("error");
+		if(null === $this->find("test","x","???",0,0,false)) throw new Exception("error");
+
+		foreach($this->listObjectsBy(null,null,null,0,0,false) as $dummy){ }
+		foreach($this->find(null,null,null,0,0,false) as $dummy){ }
+
 		printf("OK\n");
 	}
 }
