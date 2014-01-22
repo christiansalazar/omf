@@ -11,6 +11,7 @@ class OmfTest extends OmfDb {
 		$this->testhighlevelmetaapi();
 		$this->testlist();
 		$this->testfetch();
+		//$this->testfetchsort();
 	}
 	public function testlowlevelobjectapi(){
 		printf("[".__METHOD__."] ... ");
@@ -441,7 +442,6 @@ class OmfTest extends OmfDb {
 		if(null === $this->listObjects(null)) throw new Exception("error");
 
 		if(0 !== $this->listObjectsBy(null,null,null,0,0,true)) throw new Exception("error");
-		if(0 !== $this->listObjectsBy("test",null,null,0,0,true)) throw new Exception("error");
 		if(0 !== $this->listObjectsBy("test","xx",null,0,0,true)) throw new Exception("error");
 		if(0 !== $this->listObjectsBy("test","x","???",0,0,true)) throw new Exception("error");
 
@@ -451,7 +451,6 @@ class OmfTest extends OmfDb {
 		if(null === $this->listObjectsBy("test","x","???")) throw new Exception("error");
 
 		if(0 !== $this->find(null,null,null,0,0,true)) throw new Exception("error");
-		if(0 !== $this->find("test",null,null,0,0,true)) throw new Exception("error");
 		if(0 !== $this->find("test","xx",null,0,0,true)) throw new Exception("error");
 		if(0 !== $this->find("test","x","???",0,0,true)) throw new Exception("error");
 
@@ -465,6 +464,23 @@ class OmfTest extends OmfDb {
 		foreach($this->listObjectsBy(null,null,null,0,0,false) as $dummy){ }
 		foreach($this->find(null,null,null,0,0,false) as $dummy){ }
 
+		$this->deleteObjects("test");
+		$ipp=2;
+		$items=array();
+		for($i=0;$i<5;$i++){
+			list($id) = $this->create("test");
+			$items[] = $id;
+		}
+		$this->set($items[0],'test','x');	
+		$this->set($items[1],'test','y');	
+		$this->set($items[2],'test','x');	
+		$this->set($items[3],'test','y');	
+		$this->set($items[4],'test','x');	
+
+		if(3 !== $this->listObjectsBy("test","test","x",0,0,true)) throw new Exception("error");
+		if(2 !== $this->listObjectsBy("test","test","y",0,0,true)) throw new Exception("error");
+		if(5 !== $this->listObjectsBy("test",null,null,0,0,true)) throw new Exception("error");
+	
 		printf("OK\n");
 	}
 
@@ -533,4 +549,41 @@ class OmfTest extends OmfDb {
 
 		printf("OK\n");
 	}
+
+	private function _printA($result){
+		printf("\n");
+		$index=0;
+		foreach($result as $id=>$attr){
+			printf("%-10s %-10s %-10s\n",
+				$index,$id,$attr['a']);
+			$index++;
+		}
+	}
+
+	public function testfetchsort(){
+		printf("[".__METHOD__."] ... ");
+		$this->deleteObjects("test");
+
+		$ipp=2;
+		$items=array();
+
+		for($i=0,$n=10;$i<5;$i++,$n+=10){
+			list($id) = $this->create("test");
+			$items[] = $id;
+			$this->set($id,'a',$n);
+		}
+
+		$r1 = $this->fetch('test',null,array('a'),-1,0,false,"");
+		$this->_printA($r1);	
+
+		$r2 = $this->fetch('test',null,array('a'),3,1,false,array('a'));
+		$this->_printA($r2);	
+
+		
+
+
+
+		printf("OK\n");
+	}
+
 }

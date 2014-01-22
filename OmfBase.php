@@ -547,13 +547,13 @@ abstract class OmfBase extends CApplicationComponent {
 	 * @access public
 	 * @return array array('someid'=>array('name1'=>'value','name2'=>'value',))
 	 */
-	public function fetch($classname,$filter,$attributes,$limit,$offset,$counteronly){
+	public function fetch($classname,$filter=null,$attributes=null,$limit=-1,$offset=0,$counteronly=false,$sortAttributes=null){
 		$objects = array();
 		if(!$filter){
     		if($counteronly == true){
     			return $this->countObjectsByClassName($classname);
     		}else{
-    			$objects = $this->listObjects($classname,$limit,$offset);
+    			$objects = $this->listObjectsBy($classname,null,null,$limit,$offset);
     		}
     	}else{
     		$name=""; $value="";

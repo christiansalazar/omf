@@ -78,6 +78,8 @@ class OmfDb extends OmfBase {
 		if($counter_only===true) $fields = "count(obj.id) as counter";
 		$relname = $this->buildMetanameRel($attribute);
 		if($counter_only===true){
+			$row=array();
+			if(!empty($attribute)){
 			$row = $this->getDb()->createCommand()
 			->select($fields)
 			->from($this->_objects_name()." obj")
@@ -86,18 +88,37 @@ class OmfDb extends OmfBase {
 			->where("obj.classname = :cn and R.name = :rn and C.data = :v",
 				array(":cn"=>$classname,":rn"=>$relname,":v"=>$value))
 			->queryRow();
+			}else{
+			$row = $this->getDb()->createCommand()	
+			->select($fields)                          		
+			->from($this->_objects_name()." obj")
+			->where("obj.classname = :cn",
+				array(":cn"=>$classname))
+			->queryRow();                                   		
+			}
 			if(!$row) return 0;
 			return 1*$row['counter'];
 		}else{
-			$rows = $this->getDb()->createCommand()             	
+			$cmd = null;
+			if(!empty($attribute)){
+			$cmd = $this->getDb()->createCommand()             	
 			->select($fields)                                  	
 			->from($this->_objects_name()." obj")
 			->leftjoin($this->_relationship_name()." R","R.parent = obj.id")
 			->leftjoin($this->_objects_name()." C","R.child = C.id")
 			->where("obj.classname = :cn and R.name = :rn and C.data = :v",
 				array(":cn"=>$classname,":rn"=>$relname,":v"=>$value))
-			->offset($offset)                                  	
-			->limit($limit)                                    	
+			;
+			}else{
+			$cmd = $this->getDb()->createCommand()
+			->select($fields)
+			->from($this->_objects_name()." obj")
+			->where("obj.classname = :cn",
+				array(":cn"=>$classname,))
+			;
+			}
+			$rows = $cmd->offset($offset)
+			->limit($limit)
 			->queryAll();
 			if(empty($rows)) return array();
 			return $rows;
