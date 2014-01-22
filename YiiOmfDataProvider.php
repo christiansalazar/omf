@@ -45,59 +45,33 @@ class YiiOmfDataProvider extends CDataProvider {
 	public $keyField='id'; // dont change it.
 	public $caseSensitiveSort=true;
 	public $having_attribute=null;
-
 	public function __construct($classname,$config=array())
 	{
 		$this->classname= $classname;
 		foreach($config as $key=>$value)
 			$this->$key=$value;
 	}
-	private function fetchOmfData($pagination,$counter_only){
-		if(null === $this->having_attribute){
-			if($counter_only == true){
-				return $this->api->countObjectsByClassName($this->classname);
-			}else{
-				return $this->api->listObjects($this->classname, 
-				$pagination->getLimit(),$pagination->getOffset());
-			}
-		}else{
-			$name=""; $value="";
-			foreach($this->having_attribute as $_name=>$_value) {
-				$name = $_name; $value = $_value; }
-			if($counter_only == true){
-				return $this->api->listObjectsBy(
-					$this->classname,$name, $value,null,null,true);
-			}else{
-				return $this->api->listObjectsBy(
-					$this->classname, $name, $value,
-					$pagination->getLimit(),$pagination->getOffset());
-			}
+	protected function _fetch($limit,$offset){
+		$result = array();
+		foreach($this->api->fetch($this->classname,$this->having_attribute,
+				$this->attributes,$limit,$offset,false) as $id=>$attr){
+			$row = array();
+			foreach($attr as $name=>$value)
+				$row[$name] = $value;
+			$result[] = $row;
 		}
+		return $result;
 	}
 	protected function fetchData()
 	{
 		if(($pagination=$this->getPagination())!==false)
 		{
 			$pagination->setItemCount($this->getTotalItemCount());
-			$objects = $this->fetchOmfData($pagination, false);
-			$result = array();
-			foreach($objects as $obj){
-				list($id, $_classname, $auxid, $data) = 
-					$this->api->readObject($obj);
-				$row = array();
-				if(isset($this->attributes['id'])) $row['id'] = $id;
-				if(isset($this->attributes['classname'])) $row['id'] = $_classname;
-				if(isset($this->attributes['data'])) $row['data'] = $data;
-				foreach($this->attributes as $attribute){
-					$value = $this->api->get($id, $attribute);
-					$row[$attribute] = $value;
-				}
-				$result[] = $row;
-			}
-			return $result;
+			return $this->_fetch($pagination->getLimit(),
+				$pagination->getOffset());
+		}else{
+			return $this->_fetch(-1,0);
 		}
-		else
-		throw Exception("must be handled");
 	}
 	protected function fetchKeys()
 	{
@@ -110,6 +84,7 @@ class YiiOmfDataProvider extends CDataProvider {
 	}
 	protected function calculateTotalItemCount()
 	{
-		return $this->fetchOmfData(null, true);
+		return $this->api->fetch($this->classname,
+			$this->having_attribute,null, null , null, true);
 	}
 }

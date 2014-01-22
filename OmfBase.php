@@ -516,11 +516,75 @@ abstract class OmfBase extends CApplicationComponent {
 		}
 	}
 
-	/*
-	public function listPropertys($object_id) {
-		return $this->getChilds($object_id, "", "metadata");
+	/**
+	 * fetch
+	 *	retrive paginated, filtered and assembled results from the storage.
+	 *
+		usage:
+
+		$objects = $api->fetch('Person',
+			array('favoritecolor'=>'blue'),	// filter
+			array('firstname','lastname',),	// fill this attributes
+			3,								// only 3 objects
+			4,								// starting from index position 4
+			false							// false mean: return objects
+											// true mean: count only
+		);
+
+		foreach($objects as $obj_id=>$attributes){
+			printf("ID: %s\n".obj_id);
+			foreach($attributes as $name=>$value)
+				printf("[%s] = [%s]\n", $name, $value);
+		}
+
+
+	 * @param mixed $classname the class name to find for
+	 * @param array $filter key-value pair, attribute to be filtered for
+	 * @param array $attributes key-value pair, attr. to be present in results
+	 * @param int $limit 
+	 * @param int $offset 
+	 * @param bool $counteronly when true this method returns an integer 
+	 * @access public
+	 * @return array array('someid'=>array('name1'=>'value','name2'=>'value',))
+	 */
+	public function fetch($classname,$filter,$attributes,$limit,$offset,$counteronly){
+		$objects = array();
+		if(!$filter){
+    		if($counteronly == true){
+    			return $this->countObjectsByClassName($classname);
+    		}else{
+    			$objects = $this->listObjects($classname,$limit,$offset);
+    		}
+    	}else{
+    		$name=""; $value="";
+    		if($filter != null)
+			foreach($filter as $_name=>$_value) { $name = $_name; 
+				$value = $_value; }
+    		if($counteronly == true){
+    			return $this->listObjectsBy($classname,
+					$name,$value,null,null,true);
+    		}else
+    			$objects = $this->listObjectsBy($classname, $name, 
+					$value,$limit,$offset);
+    	}
+		//assembly the required object properties to the final result
+		$result = array();
+		foreach($objects as $obj){
+			list($id,$cn,$ax,$data) = $this->readObject($obj);
+			$row = array();
+			if($attributes != null)
+			foreach($attributes as $name){
+				if($name == 'id'){
+					$row[$name] = $id;
+				}elseif($name == 'data'){
+					$row[$name] = $data;
+				}else
+				$row[$name] = $this->get($id, $name);
+			}
+			$result[$id] = $row;
+		}
+		return $result;
 	}
-	*/
 
 	protected function genid($id=0){
 		if($id > 0) return $id;

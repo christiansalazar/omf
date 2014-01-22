@@ -23,11 +23,13 @@ how the persistence will impact your storage design.
 
 Twitter: @salazarchris74
 
-**OMF CLASS DIAGRAM**
+OMF CLASS DIAGRAM
+-----------------
 
 ![Class Diagram][1]
 
-**USAGE**
+USAGE
+-----
 
 The OMF Framework is currently designed to have a persistence model, 
 in this case MYSQL but can be another distinct one. The component involved
@@ -36,7 +38,9 @@ readme file is targeted to help you in install this component as a
 Yii Framwork Component, but you can use it in a non-yii platform with
 little changes.
 
-Installation in your config/main:
+#Installation in your config/main:
+
+### STEP1: in your config/main.php
 
 	'import'=>array(
 		'application.models.*',
@@ -48,13 +52,16 @@ Installation in your config/main:
 		'omf'=>array('class'=>'application.extensions.OmfDb'),
 	),
 
-Database:
+### STEP2: provide storage
 
-When using the DB version (the unique one right now) then you are required to
-install the sql script provided in this package.  This OMF framework will
-persist all objects in this single storage. It uses MYSQL. can be ported.
+When using the DB version of OMF (OmfDb.php) then you are required to
+install the sql script provided in this package.  
 
-Api Usage:
+This OMF framework will persist all objects in this single storage. 
+It uses MYSQL. can be ported.
+
+API USAGE
+---------
 
 Now you can use this object by calling:
 
@@ -65,10 +72,12 @@ or by direct instance:
 	$api = new OmfDb();
 	$object_id = $api->create('MyClassName');
 
-**QUICK API RESUME**
+##QUICK API RESUME
 
 You are required to check in detail the provided source code for api details on each method.
 the following are a resume of the common usage api methods:
+
+###Create Objects
 
 $api can be: Yii::app()->omf or: $api = new OmfDb();
 
@@ -96,6 +105,8 @@ you can also create your own relationships:
 	A--parent-->B
 	A--somerelname-->B
 	A--somerelname-->C
+
+###Listing (low level), see also 'fetch' below.
 
 list all child objects of A, having a relationship named 'somerelname' and being an instance of 'test'.
 this can be done too by calling the listRelations method, see later by specifying a 'forward' query mode.
@@ -130,7 +141,7 @@ list relationship objects instead of listing objects pointed by relationships:
 	//
 	$relationships = $api->listRelations($b, "somerelname", "test", "forward");
 
-metadata api (attributes getter & setters):
+###Handling Metadata (Getters and Setters)
 
 	$api->set($a, 'color', 'yellow');
 	$api->set($a, 'firstname', 'christian');
@@ -148,41 +159,78 @@ finding objects by its primary ID:
 	$a = $api->loadObject($id);
 	list($_id, $_classname, $_auxid, $_data) = $a;
 
-finding objects by its metadata:
+FINDING OBJECTS, LISTING, FETCH
+-------------------------------
 
-	// find an object of class 'test' by searching for its metadata 'firstname' having the value 'christian':
-	// returns an array of omf_objects
-	list($must_be_a) = $api->find("test","firstname","christian");
+there are various methods, recomended for your application is: fetch(...)
 
-pagination options:
+* listObjects
+	low level. returns omf_objects by its classname.
 
-	// find all 'Person' having property 'likes_jam' equal to 'yes'
-	// the result can be huge, so lets OMF to paginate it:
-	$items_per_page = 5;
-	$counter = $api->find("Person","likes_jam","yes", null, null, true);
-	// suppose counter is 10000
-	$pages = $api->calculatePages($counter, $items_per_page);
-	// now display page 7
-	$page = 7;
-	$offset = $this->calculatePageOffset($items_per_page,$page);
-	$objects = $api->find("Person","likes_jam","yes",$offset,$items_per_page);
-	// display objects:
-	foreach($objects as $obj){
-		list($id, $classname, $aux_id, $data) = $obj;
-		// do something
-	}
+		foreach($api->listObjects('someclass') as $obj){
+			list($id, $classname, $auxid, $data) = $obj;
+			$someproperty = $api->get($id,'someproperty');
+		}
 
-About indexes:
+* listObjectsBy
+	low level, but allowing pagination, and a filter to avoid retrieving the whole database
 
-[read more about how the find method uses an index to enhance a search](https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948 "https://github.com/christiansalazar/omf/commit/aa4b39e22feb1a2be2ee96b045da35a1cc3c3b59#commitcomment-4997948 a Yii Framework Component, in your config/main.php file add a component")
+		foreach($api->listObjectsBy('someclass','someattr','xyz',-1,0,false) as $obj){
+			list($id, $classname, $auxid, $data) = $api->readObject($obj);
+			$someproperty = $api->get($id,'someproperty');
+		}
 
-to delete instances:
+* find 
+	offers you low level listing and pagination options (similar to listObjectsBy).
+
+		// find all 'Person' having property 'likes_jam' equal to 'yes'
+		// the result can be huge, so lets OMF to paginate it:
+		$items_per_page = 5;
+		$counter = $api->find("Person","likes_jam","yes", null, null, true);
+		// suppose counter is 10000
+		$pages = $api->calculatePages($counter, $items_per_page);
+		// now display page 7
+		$page = 7;
+		$offset = $this->calculatePageOffset($items_per_page,$page);
+		$objects = $api->find("Person","likes_jam","yes",$offset,$items_per_page);
+		// display objects:
+		foreach($objects as $obj){
+			list($id, $classname, $aux_id, $data) = $obj;
+			// do something
+		}
+
+* fetch (recomended)
+	retrive objects and its propertys, those one selected by you, having options
+	to paginate and only return counters (usefull for paginators), you can
+	filter too which objects can be returned (having a filter).
+
+	example:
+
+		$objects = $api->fetch('Person',
+			array('favoritecolor'=>'blue'),	// filter
+			array('firstname','lastname',),	// fill this attributes
+			3,								// only 3 objects
+			4,								// starting from index position 4
+			false							// false mean: return objects
+											// true mean: count only
+		);
+
+		foreach($objects as $obj_id=>$attributes){
+			printf("ID: %s\n".obj_id);
+			foreach($attributes as $name=>$value)
+				printf("[%s] = [%s]\n", $name, $value);
+		}
+
+
+OBJECT DELETION
+---------------
 
 	$this->deleteObject($a); // will delete related metadata too
 	$this->deleteObjects("test"); // delete all 'test' instances, be carefull
 
 
 OMF under Yii Framework:
+-----------------------
 
 To make OMF be a part of Yii Framework the first step is to provide a way to iterate over it, in 
 this case by implementing the YiiOmfDataProvider, having only two extra arguments as the regular 

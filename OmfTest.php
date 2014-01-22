@@ -10,6 +10,7 @@ class OmfTest extends OmfDb {
 		$this->testhighlevelcoreapi();
 		$this->testhighlevelmetaapi();
 		$this->testlist();
+		$this->testfetch();
 	}
 	public function testlowlevelobjectapi(){
 		printf("[".__METHOD__."] ... ");
@@ -279,7 +280,6 @@ class OmfTest extends OmfDb {
 	public function testhighlevelmetaapi(){
 		printf("[".__METHOD__."] ... ");
 		$this->deleteObjects("test");
-		$this->deleteObjects("metadata");
 		$t1 = $this->buildMetanameRel("t1");
 		$t2 = $this->buildMetanameRel("t2");
 
@@ -371,14 +371,12 @@ class OmfTest extends OmfDb {
 		$this->deleteObject($c);
 
 		$this->deleteObjects("test");
-		$this->deleteObjects("metadata");
 		//$this->getDb()->createCommand()->delete("omf_index");
 		printf("OK\n");
 	}
 	public function testlist(){
 		printf("[".__METHOD__."] ... ");
 		$this->deleteObjects("test");
-		$this->deleteObjects("metadata");
 		
 		$n1 = 10;
 		$n2 = 100;
@@ -466,6 +464,72 @@ class OmfTest extends OmfDb {
 		foreach($this->listObjects("none") as $dummy){ }
 		foreach($this->listObjectsBy(null,null,null,0,0,false) as $dummy){ }
 		foreach($this->find(null,null,null,0,0,false) as $dummy){ }
+
+		printf("OK\n");
+	}
+
+	public function testfetch(){
+		printf("[".__METHOD__."] ... ");
+		$this->deleteObjects("test");
+
+		$ipp=2;
+		$items=array();
+
+		for($i=0;$i<5;$i++){
+			list($id) = $this->create("test");
+			$items[] = $id;
+			$this->set($id,'a','a'.$id);
+			$this->set($id,'b','b'.$id);
+			$this->set($id,'c','c'.$id);
+		}
+
+		$this->set($items[0],'test','x');	
+		$this->set($items[1],'test','y');	
+		$this->set($items[2],'test','x');	
+		$this->set($items[3],'test','y');	
+		$this->set($items[4],'test','x');	
+
+		if(null === $this->fetch(null,null,null,null,null,null)) throw new Exception("error");
+		foreach($this->fetch(null,null,null,null,null,null) as $dummy) { }
+		if(null === $this->fetch('test',array(),array(),null,null,true)) throw new Exception("error");
+		if(null === $this->fetch('test',array(),array(),null,null,true)) throw new Exception("error");
+
+		if(5 !== $this->fetch('test',null,null,-1,0,true)) throw new Exception("error");
+		if(null === $this->fetch('test',null,null,-1,0,false)) throw new Exception("error");
+		if(5 !== count($this->fetch('test',null,null,-1,0,false))) throw new Exception("error");
+
+		if(2 !== count($this->fetch('test',null,null,2,0,false))) throw new Exception("error");
+		if(2 !== count($this->fetch('test',null,null,2,2,false))) throw new Exception("error");
+		if(1 !== count($this->fetch('test',null,null,2,4,false))) throw new Exception("error");
+		
+		$r = $this->fetch('test',null,array('a','b'),-1,0,false);
+		foreach($r as $id=>$attr){
+			if($attr['a'] !== 'a'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
+			if($attr['b'] !== 'b'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
+			if(isset($attr['c'])) throw new Exception("error.id=".$id.".c must not exists here");
+		}
+
+		$f = array('bad'=>'filter');
+		if(0 !== $this->fetch('test',$f,null,-1,0,true)) throw new Exception("error");
+		if(0 !== count($this->fetch('test',$f,null,-1,0,false))) throw new Exception("error");
+
+		$f = array('test'=>'x');
+		if(3 !== $this->fetch('test',$f,null,-1,0,true)) throw new Exception("error");
+		$f = array('test'=>'y');
+		if(2 !== $this->fetch('test',$f,null,-1,0,true)) throw new Exception("error");
+
+		$f = array('test'=>'x');
+		if(3 !== count($this->fetch('test',$f,null,-1,0,false))) throw new Exception("error");
+		$f = array('test'=>'y');
+		if(2 !== count($this->fetch('test',$f,null,-1,0,false))) throw new Exception("error");
+
+		$f = array('test'=>'x');
+		$r = $this->fetch('test',$f,array('a','b'),-1,0,false);
+		foreach($r as $id=>$attr){
+			if($attr['a'] !== 'a'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
+			if($attr['b'] !== 'b'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
+			if(isset($attr['c'])) throw new Exception("error.id=".$id.".c must not exists here");
+		}
 
 		printf("OK\n");
 	}
