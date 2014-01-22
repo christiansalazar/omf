@@ -182,6 +182,38 @@ to delete instances:
 	$this->deleteObjects("test"); // delete all 'test' instances, be carefull
 
 
+OMF under Yii Framework:
+
+To make OMF be a part of Yii Framework the first step is to provide a way to iterate over it, in 
+this case by implementing the YiiOmfDataProvider, having only two extra arguments as the regular 
+CDataProvider subclasses:
+
+Lets start by supposing you have some Person instances created in Omf  having 
+some attributes: firstname and lastname, so proceed to list them in a CGridView:
+
+	$dataProvider = new YiiOmfDataProvider("Person", array(
+			'api' => Yii::app()->omf,
+			'id'=>'list-person-objects',
+
+			// this is optional, to get a more specific list
+			'having_attribute' => array('someattribute'=>'something'),
+
+			'attributes' => array('id','classname','firstname','lastname'),
+			'sort'=>array(
+				'attributes'=>array('id','lastname'),
+			),
+			'pagination'=>array(
+				'pageSize'=>3,
+			),
+		)
+	);
+
+	// show results in a CGridView, CListView etc
+
+	$this->widget('zii.widgets.grid.CGridView', array(
+		 'dataProvider'=>$dataProvider,
+	));
+
 **author:**
 
 Christian Salazar H. <christiansalazarh@gmail.com>

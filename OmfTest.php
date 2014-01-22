@@ -438,6 +438,10 @@ class OmfTest extends OmfDb {
 
 		// test using an inexisting status, so nothing must be returned
 		// must never return null, it will break foreach statements
+
+		if(0 !== $this->countObjectsByClassname(null)) throw new Exception("error");
+		if(null === $this->listObjects(null)) throw new Exception("error");
+
 		if(0 !== $this->listObjectsBy(null,null,null,0,0,true)) throw new Exception("error");
 		if(0 !== $this->listObjectsBy("test",null,null,0,0,true)) throw new Exception("error");
 		if(0 !== $this->listObjectsBy("test","xx",null,0,0,true)) throw new Exception("error");
@@ -458,6 +462,8 @@ class OmfTest extends OmfDb {
 		if(null === $this->find("test","xx",null,0,0,false)) throw new Exception("error");
 		if(null === $this->find("test","x","???",0,0,false)) throw new Exception("error");
 
+		foreach($this->listObjects(null) as $dummy){ }
+		foreach($this->listObjects("none") as $dummy){ }
 		foreach($this->listObjectsBy(null,null,null,0,0,false) as $dummy){ }
 		foreach($this->find(null,null,null,0,0,false) as $dummy){ }
 
