@@ -1,6 +1,8 @@
 Object Modeling Framework (OMF)
 ==============================
 
+https://github.com/christiansalazar/omf.git
+
 OMF is a framework for handle and persist objects, properties and 
 relationships between them having an abstract and unique persistence model for 
 all objects leaving you off the traditional data models.
@@ -40,7 +42,14 @@ little changes.
 
 #Installation in your config/main:
 
-### STEP1: in your config/main.php
+github repository: https://github.com/christiansalazar/omf.git
+
+### STEP1: install it in your extensions directory:
+
+	cd protected/extensions
+	git clone https://github.com/christiansalazar/omf.git
+
+### STEP2: in your config/main.php
 
 	'import'=>array(
 		'application.models.*',
@@ -52,7 +61,7 @@ little changes.
 		'omf'=>array('class'=>'application.extensions.OmfDb'),
 	),
 
-### STEP2: provide storage
+### STEP3: provide storage
 
 When using the DB version of OMF (OmfDb.php) then you are required to
 install the sql script provided in this package.  
