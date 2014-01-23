@@ -211,58 +211,6 @@ You may think passing various attributes to search for using this argument,
 this will come in the short comming future, by now, only one attribute=>value 
 is allowed.
 
-#GetObject and YII FRAMEWORK:
-
-This method can be easily used in Yii Framework when working with CFormModel to
-pass attributes to a CFormModel:
-
-~~~
-[php]
- 	// the action in /protected/controllers/XXXController.php
-	public function actionEditBill($billkey){
-		$model = new EditBillForm();
-		$model->attributes = Yii::app()->omf->getObject('Bill',array('key'=>$billkey));
-
-		if(isset($_POST['EditBillForm']))
-		{
-			$model->attributes=$_POST['EditBillForm'];
-			if($model->validate()){
-				// ...bla
-			}
-		}
-		$this->render('editbill',array('model'=>$model));
-	}
-
-	// the model in /protected/models/EditBillForm.php
-	class EditBillForm extends CFormModel
-	{
-		public $item;
-		public $amount;
-		public $from;
-		public $to;
-		public $txn_id;
-		public function rules()
-		{
-			return array(
-				array('item, amount, from, to', 'required'),
-				array('txn_id', 'safe'),
-			);
-		}
-		public function attributeLabels()
-		{
-			return array(
-				'billkey'=>'Bill Number',
-				'item'=>'Item',
-				'amount'=>'$ Amount',
-				'from'=>'From Date',
-				'to'=>'To Date',
-				'txn_id'=>'Transaction',
-			);
-		}
-	}
-
-~~~
-
 LISTING OBJECTS
 ---------------
 
@@ -343,17 +291,76 @@ foreach($api->listObjectsBy('someclass','someattr','xyz',-1,0,false) as $obj){
 
 ~~~
 
-Listing Objects in Yii Framework:
---------------------------------
+OBJECT DELETION
+---------------
 
-To make OMF be a part of Yii Framework the first step is to provide a way to iterate over it, in 
-this case by implementing the YiiOmfDataProvider, having only two extra arguments as the regular 
-CDataProvider subclasses:
+	$this->deleteObject($a); // will delete related metadata too
+	$this->deleteObjects("test"); // delete all 'test' instances, be carefull
+
+#OMF and Yii Framework integration
+----------------------------------
+
+##CFormModel and Form Management
+
+This method can be easily used in Yii Framework when working with CFormModel to
+pass attributes to a CFormModel:
+
+~~~
+[php]
+ 	// the action in /protected/controllers/XXXController.php
+	public function actionEditBill($billkey){
+		$model = new EditBillForm();
+		// 1. load your form with attributes values comming from OMF:
+		$model->attributes = 
+			Yii::app()->omf->getObject('Bill',array('key'=>$billkey));
+		if(isset($_POST['EditBillForm']))
+		{
+			$model->attributes=$_POST['EditBillForm'];
+			if($model->validate()){
+		// 2. now save your values back to OMF:
+				Yii::app()->omf->set($model->id,$model->attributes);
+			}
+		}
+		$this->render('editbill',array('model'=>$model));
+	}
+
+	// the model in /protected/models/EditBillForm.php
+	class EditBillForm extends CFormModel
+	{
+		public $id;			// the OMF unique ID for your instance
+	
+		public $item;		// this 5 attribues were declared in OMF
+		public $amount;		// using $omfapi->set($id, 'amount', 123);
+		public $from;		// and so on, in were $id is your model->id
+		public $to;
+		public $txn_id;
+
+		public function rules()
+		{
+			return array(
+				array('item, amount, from, to', 'required'),
+				array('txn_id', 'safe'),
+			);
+		}
+		public function attributeLabels()
+		{
+			return array(
+				'billkey'=>'Bill Number',
+				'item'=>'Item',
+				'amount'=>'$ Amount',
+				'from'=>'From Date',
+				'to'=>'To Date',
+				'txn_id'=>'Transaction',
+			);
+		}
+	}
+
+~~~
+
+##OMF and CDataProvider - YiiOmfDataProvider
 
 Lets start by supposing you have some Person instances created in Omf  having 
 some attributes: firstname and lastname, so proceed to list them in a CGridView:
-
-
 
 ~~~
 [php]
@@ -382,14 +389,62 @@ some attributes: firstname and lastname, so proceed to list them in a CGridView:
 
 ~~~
 
+##OMF and CArrayDataProvider
 
+CArrayDataProvider is always a nice option when treating with small result sets.
 
+~~~
+[php]
 
-OBJECT DELETION
----------------
+	// 1. lets build an array well recognized by CArrayDataProvider
+	//	that is a key=>pair array
+	//
+	$data = array();
+	foreach($this->billing->listBillQuotes($agent_id) as $r){
+		list($id,$bk,$item,$amount,$from,$to,$txn) = $r;
+		$data[] = array(
+			'billkey'=>CHtml::link($bk,array('editbill','billkey'=>$bk)),
+			'bk'=>$bk,
+			'item'=>$item,
+			'amount'=>$amount,
+			'from'=>date('F j, Y',strtotime($from)),
+			'to'=>date('F j, Y',strtotime($to)),
+			'transaction'=>$txn,
+			'is_paid'=>!empty($txn),
+		);
+	}
 
-	$this->deleteObject($a); // will delete related metadata too
-	$this->deleteObjects("test"); // delete all 'test' instances, be carefull
+	// 2. build a data provider
+	//
+	$dataProvider = new CArrayDataProvider($data, array(
+			'id'=>'billaccount-bill',
+			'keyField'=>'billkey',
+			'sort'=>array(
+				'attributes'=>array('from','to','billkey','transaction','item'),
+				'defaultOrder'=>array('from'),
+			),
+			'pagination'=>array(
+				'pageSize'=>10,
+			),
+		)
+	);
+
+	// 3. lets show the result in a CGridView
+	//
+	$this->widget('zii.widgets.grid.CGridView', array(
+		'id'=>'bill-list',
+		'dataProvider'=>$dataProvider,
+		'columns'=>array(
+			array('name'=>'billkey','type'=>'html','header'=>'Bill Number'),
+			array('name'=>'item','type'=>'raw','header'=>'Item'),
+			array('name'=>'amount','type'=>'raw','header'=>'Amount($)'),
+			array('name'=>'from','type'=>'raw','header'=>'From Date'),
+			array('name'=>'to','type'=>'raw','header'=>'Expire'),
+			array('name'=>'transaction','type'=>'raw','header'=>'Transaction Number'),
+		),
+	));
+
+~~~
 
 **author:**
 
