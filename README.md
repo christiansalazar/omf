@@ -1,7 +1,7 @@
 Object Modeling Framework (OMF)
 ==============================
 
-https://github.com/christiansalazar/omf.git
+[https://github.com/christiansalazar/omf.git](https://github.com/christiansalazar/omf.git "https://github.com/christiansalazar/omf.git")
 
 OMF is a framework for handle and persist objects, properties and 
 relationships between them having an abstract and unique persistence model for 
@@ -42,7 +42,9 @@ little changes.
 
 #Installation in your config/main:
 
-github repository: https://github.com/christiansalazar/omf.git
+github repository:
+
+[https://github.com/christiansalazar/omf.git](https://github.com/christiansalazar/omf.git "https://github.com/christiansalazar/omf.git")
 
 ### STEP1: install it in your extensions directory:
 
@@ -177,6 +179,10 @@ no matter of what class belongs each.
 
 Suppose you create some test objects of class Person having some attributes:
 
+
+
+~~~
+[php]
 	list($person_id) = $api->create('Person');
 	$api->set($person_id,'firstname','jhonn');
 	$api->set($person_id,'lastname','doe');
@@ -197,6 +203,8 @@ Suppose you create some test objects of class Person having some attributes:
 	printf("The guy names are: %s %s,  ssn: %s",
 		$guy['firstname'],$guy['lastname'],$guy['social_security_number']);
 
+~~~
+
 About the array() argument when calling getObject:
 
 You may think passing various attributes to search for using this argument, 
@@ -208,7 +216,9 @@ is allowed.
 This method can be easily used in Yii Framework when working with CFormModel to
 pass attributes to a CFormModel:
 
-	// the action in /protected/controllers/XXXController.php
+~~~
+[php]
+ 	// the action in /protected/controllers/XXXController.php
 	public function actionEditBill($billkey){
 		$model = new EditBillForm();
 		$model->attributes = Yii::app()->omf->getObject('Bill',array('key'=>$billkey));
@@ -251,6 +261,8 @@ pass attributes to a CFormModel:
 		}
 	}
 
+~~~
+
 LISTING OBJECTS
 ---------------
 
@@ -258,23 +270,33 @@ there are various methods, recomended for your application is: fetch(...)
 
 * listObjects
 	low level. returns omf_objects by its classname.
-
+~~~
+[php]
 		foreach($api->listObjects('someclass') as $obj){
 			list($id, $classname, $auxid, $data) = $obj;
 			$someproperty = $api->get($id,'someproperty');
 		}
+~~~
 
 * listObjectsBy
 	low level, but allowing pagination, and a filter to avoid retrieving the whole database
 
-		foreach($api->listObjectsBy('someclass','someattr','xyz',-1,0,false) as $obj){
+~~~
+[php]
+foreach($api->listObjectsBy('someclass','someattr','xyz',-1,0,false) as $obj){
 			list($id, $classname, $auxid, $data) = $api->readObject($obj);
 			$someproperty = $api->get($id,'someproperty');
 		}
 
+~~~
+
 * find 
 	offers you low level listing and pagination options (similar to listObjectsBy).
 
+
+
+~~~
+[php]
 		// find all 'Person' having property 'likes_jam' equal to 'yes'
 		// the result can be huge, so lets OMF to paginate it:
 		$items_per_page = 5;
@@ -291,6 +313,8 @@ there are various methods, recomended for your application is: fetch(...)
 			// do something
 		}
 
+~~~
+
 * fetch (recomended)
 	retrive objects and its propertys, those one selected by you, having options
 	to paginate and only return counters (usefull for paginators), you can
@@ -298,6 +322,10 @@ there are various methods, recomended for your application is: fetch(...)
 
 	example:
 
+
+
+~~~
+[php]
 		$objects = $api->fetch('Person',
 			array('favoritecolor'=>'blue'),	// filter
 			array('firstname','lastname',),	// fill this attributes
@@ -313,15 +341,10 @@ there are various methods, recomended for your application is: fetch(...)
 				printf("[%s] = [%s]\n", $name, $value);
 		}
 
-OBJECT DELETION
----------------
+~~~
 
-	$this->deleteObject($a); // will delete related metadata too
-	$this->deleteObjects("test"); // delete all 'test' instances, be carefull
-
-
-OMF under Yii Framework:
------------------------
+Listing Objects in Yii Framework:
+--------------------------------
 
 To make OMF be a part of Yii Framework the first step is to provide a way to iterate over it, in 
 this case by implementing the YiiOmfDataProvider, having only two extra arguments as the regular 
@@ -330,6 +353,10 @@ CDataProvider subclasses:
 Lets start by supposing you have some Person instances created in Omf  having 
 some attributes: firstname and lastname, so proceed to list them in a CGridView:
 
+
+
+~~~
+[php]
 	$dataProvider = new YiiOmfDataProvider("Person", array(
 			'api' => Yii::app()->omf,
 			'id'=>'list-person-objects',
@@ -352,6 +379,17 @@ some attributes: firstname and lastname, so proceed to list them in a CGridView:
 	$this->widget('zii.widgets.grid.CGridView', array(
 		 'dataProvider'=>$dataProvider,
 	));
+
+~~~
+
+
+
+
+OBJECT DELETION
+---------------
+
+	$this->deleteObject($a); // will delete related metadata too
+	$this->deleteObjects("test"); // delete all 'test' instances, be carefull
 
 **author:**
 
