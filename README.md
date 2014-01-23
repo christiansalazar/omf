@@ -168,8 +168,91 @@ finding objects by its primary ID:
 	$a = $api->loadObject($id);
 	list($_id, $_classname, $_auxid, $_data) = $a;
 
-FINDING OBJECTS, LISTING, FETCH
--------------------------------
+
+FINDING AN OBJECT BY ITS ID
+---------------------------
+
+All objects in OMF shares the same autonumeric, because they all are objects 
+no matter of what class belongs each.
+
+Suppose you create some test objects of class Person having some attributes:
+
+	list($person_id) = $api->create('Person');
+	$api->set($person_id,'firstname','jhonn');
+	$api->set($person_id,'lastname','doe');
+	$api->set($person_id,'social_security_number','123');
+
+	list($person_id) = $api->create('Person');
+	$api->set($person_id,'firstname','matty');
+	$api->set($person_id,'lastname','doral');
+	$api->set($person_id,'social_security_number','456');
+	
+	// ok we want OMF to get us the full object having propertys finding it by
+	// some property value or inclusive its primary id:
+
+	$guy = $this->getObject('Person',array('social_security_number'=>'123'));
+
+	// now guy has all its propertys rendered:
+
+	printf("The guy names are: %s %s,  ssn: %s",
+		$guy['firstname'],$guy['lastname'],$guy['social_security_number']);
+
+About the array() argument when calling getObject:
+
+You may think passing various attributes to search for using this argument, 
+this will come in the short comming future, by now, only one attribute=>value 
+is allowed.
+
+#GetObject and YII FRAMEWORK:
+
+This method can be easily used in Yii Framework when working with CFormModel to
+pass attributes to a CFormModel:
+
+	// the action in /protected/controllers/XXXController.php
+	public function actionEditBill($billkey){
+		$model = new EditBillForm();
+		$model->attributes = Yii::app()->omf->getObject('Bill',array('key'=>$billkey));
+
+		if(isset($_POST['EditBillForm']))
+		{
+			$model->attributes=$_POST['EditBillForm'];
+			if($model->validate()){
+				// ...bla
+			}
+		}
+		$this->render('editbill',array('model'=>$model));
+	}
+
+	// the model in /protected/models/EditBillForm.php
+	class EditBillForm extends CFormModel
+	{
+		public $item;
+		public $amount;
+		public $from;
+		public $to;
+		public $txn_id;
+		public function rules()
+		{
+			return array(
+				array('item, amount, from, to', 'required'),
+				array('txn_id', 'safe'),
+			);
+		}
+		public function attributeLabels()
+		{
+			return array(
+				'billkey'=>'Bill Number',
+				'item'=>'Item',
+				'amount'=>'$ Amount',
+				'from'=>'From Date',
+				'to'=>'To Date',
+				'txn_id'=>'Transaction',
+			);
+		}
+	}
+
+LISTING OBJECTS
+---------------
 
 there are various methods, recomended for your application is: fetch(...)
 
@@ -229,7 +312,6 @@ there are various methods, recomended for your application is: fetch(...)
 			foreach($attributes as $name=>$value)
 				printf("[%s] = [%s]\n", $name, $value);
 		}
-
 
 OBJECT DELETION
 ---------------

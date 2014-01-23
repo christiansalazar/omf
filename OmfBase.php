@@ -586,6 +586,46 @@ abstract class OmfBase extends CApplicationComponent {
 		return $result;
 	}
 
+	/**
+	 * getObject
+	 *	returns a single object in a form of array having all its propertys
+	 * 
+	 *	sample return value:
+	 *	
+	 *		array('id'=>123,'classname'=>'some','data'=>'??',
+	 *			'firstname'=>'jhonn','lastname'=>'doe');
+	 *
+	 *
+	 * @param string $classname 
+	 * @param array $searchbyAttributes array('findbywhatAttr'=>'Value')
+	 * @access public
+	 * @return array null if no objects found or an array.
+	 */
+	public function getObject($classname, $searchbyAttributes){
+		$filter_attr=''; $filter_value='';
+		if(empty($searchbyAttributes)) return null;
+		foreach($searchbyAttributes as $key=>$val){
+			$filter_attr = $key; $filter_value = $val;
+		}
+		$object = array();
+		$omf_object = null;
+		if($filter_attr == 'id'){
+			$omf_object = $this->loadObject($filter_value);
+		}else{
+			foreach($this->find($classname, $filter_attr, $filter_value, 0,1,false) 
+				as $_omf_object)
+				$omf_object = $_omf_object;
+		}
+		if(empty($omf_object)) return null;
+		list($obj_id,$_classname,$aux,$data) = $omf_object;
+		$object['id'] = $obj_id;
+		$object['classname'] = $classname;
+		$object['data'] = $data;
+		foreach($this->listPropertys($obj_id) as $attr)
+			$object[$attr] = $this->get($obj_id,$attr);
+		return $object;
+	}
+
 	protected function genid($id=0){
 		if($id > 0) return $id;
 		return microtime();

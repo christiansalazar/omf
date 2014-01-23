@@ -12,6 +12,7 @@ class OmfTest extends OmfDb {
 		$this->testlist();
 		$this->testfetch();
 		//$this->testfetchsort();
+		$this->testgetobject();
 	}
 	public function testlowlevelobjectapi(){
 		printf("[".__METHOD__."] ... ");
@@ -560,6 +561,7 @@ class OmfTest extends OmfDb {
 		}
 	}
 
+	/*
 	public function testfetchsort(){
 		printf("[".__METHOD__."] ... ");
 		$this->deleteObjects("test");
@@ -579,11 +581,48 @@ class OmfTest extends OmfDb {
 		$r2 = $this->fetch('test',null,array('a'),3,1,false,array('a'));
 		$this->_printA($r2);	
 
-		
-
-
-
 		printf("OK\n");
 	}
+	*/
 
+	public function testgetobject(){
+		printf("[".__METHOD__."] ... ");
+		$this->deleteObjects("test");
+		
+		list($id0) = $this->create('test');
+		$this->set($id0,'a','a0');
+		$this->set($id0,'b','b0');
+
+		list($id1) = $this->create('test');
+		$this->set($id1,'a','a1');
+		$this->set($id1,'b','b1');
+
+		if(null !== $this->getObject('test',null)) throw new Exception("error");
+		if(null !== $this->getObject('test',array())) throw new Exception("error");
+		if(null !== $this->getObject('test',array('x'=>'y'))) throw new Exception("error");
+		if(null !== $this->getObject('test',array('a'=>'y'))) throw new Exception("error");
+
+		$ax = $this->getObject('test',array('a'=>'a0'));
+		$ay = $this->getObject('test',array('id'=>$id0));
+		$az = $this->getObject('test',array('id'=>$id1));
+
+		if(null === $ax) throw new Exception("error");
+		if(null === $ay) throw new Exception("error");
+		if(null === $az) throw new Exception("error");
+
+		foreach(array($ax,$ay,$az) as $index=>$obj){
+			if($index <= 1){
+				if($id0 !== $obj['id']) throw new Exception("error.index=".$index);
+				if('test' !== $obj['classname']) throw new Exception("error.index=".$index);
+				if("a0" !== $obj['a']) throw new Exception("error.index=".$index);
+				if("b0" !== $obj['b']) throw new Exception("error.index=".$index);
+			}else{
+				if($id1 !== $obj['id']) throw new Exception("error.index=".$index);
+				if('test' !== $obj['classname']) throw new Exception("error.index=".$index);
+				if("a1" !== $obj['a']) throw new Exception("error.index=".$index);
+				if("b1" !== $obj['b']) throw new Exception("error.index=".$index);
+			}
+		}
+		printf("OK\n");
+	}
 }
