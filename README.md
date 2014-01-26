@@ -165,14 +165,14 @@ now using getters:
 	$must_be_yellow = $api->get($a, 'color');
 	$must_be_7 = $api->get($a, 'dogs');
 
-finding objects by its primary ID:
+Finding objects by its primary omf ID
+-------------------------------------
 
 	$a = $api->loadObject($id);
 	list($_id, $_classname, $_auxid, $_data) = $a;
 
-
-FINDING AN OBJECT BY ITS ID
----------------------------
+FINDING AN OBJECT BY ITS ATTRIBUTES
+-----------------------------------
 
 All objects in OMF shares the same autonumeric, because they all are objects 
 no matter of what class belongs each.
