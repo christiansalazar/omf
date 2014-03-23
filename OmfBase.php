@@ -137,7 +137,7 @@ abstract class OmfBase extends CApplicationComponent {
 	 * @seealso readRelation
 	 * @return array array(array(id, parent_id, child_id, name, data))
 	 */
-	abstract protected function listRel($object_id, $parent_or_child, $name="");
+	abstract protected function listRel($object_id, $parent_or_child, $name="",$offset=0,$limit=-1);
 
 	abstract public function deleteObjById($object_id);
 	abstract public function deleteObjByClassname($classname);
@@ -209,7 +209,7 @@ abstract class OmfBase extends CApplicationComponent {
 	 * @param mixed $rel_name the relationship name
 	 * @param mixed $rel_data the relationship data
 	 * @access public
-	 * @return array omf_relation array(id, parent_id, child_id, name, data)
+	 * @return int the relation id
 	 */
 	public function createRelation($parent, $child, $rel_name, $rel_data=""){
 		$parent_id = $parent; $child_id = $child;
@@ -300,10 +300,9 @@ abstract class OmfBase extends CApplicationComponent {
 			}
 			list($obj_id, $obj_classname, $obj_aux_id, $obj_data) = $object;
 			if(($obj_classname == $classname) 
-				|| ($classname == null) || ($classname=="")){
+				|| ($classname == null) || ($classname==""))
 				$result[] = array($rel_id, $parent_id, $child_id,	$rel_name, 
 					$rel_data, $object); // +object_instance
-			}
 		}
 		return $result;
 	}
