@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Omf by christiansalazar</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>Omf</h1>
+        <p>Object Modeling Framework (OMF), a framework for handling objects and relationships. Available for pure PHP and Yii Framework. Portable to other languages (comming soon).</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <a href="https://github.com/christiansalazar/omf" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/christiansalazar/omf/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/christiansalazar/omf/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h3>
+<a name="omf-a-new-simple-framework-for-handling-objects-and-relationships" class="anchor" href="#omf-a-new-simple-framework-for-handling-objects-and-relationships"><span class="octicon octicon-link"></span></a>OMF a new simple framework for handling objects and relationships.</h3>
+
+<p>OMF is a little but powerful framework capable of handling the persistence for objects and relationships independent of the selected storage mode. All your system can be built using OMF, including the relationships between your business classes.</p>
+
+<h3>
+<a name="the-omf-concept" class="anchor" href="#the-omf-concept"><span class="octicon octicon-link"></span></a>The Omf Concept</h3>
+
+<p>Suppose you have a CAR, a PIECE and a PERSON as example of business classes. Now explore the possible relationships between that classes: A Car has Pieces, that last ones can be sold by a Person, and again, a Person can be the owner of that Car or the technician for that same Car.  In Omf this example can be draw as this:</p>
+
+<p>[:Car]--{has_piece}--&gt;[:Piece]
+[:Person]--{is_owner}--&gt;[:Car]
+[:Person]--{tech_guy}--&gt;[:Car]
+[:Person]--{is_vendor}--&gt;[:Piece]</p>
+
+<p>In traditional persistence models you need at least 6 or 7 tables to persist this model, when system grows in size then the number of tables grows too. Using OMF you will always has 2 tables: omf_objects and omf_relationships, no more. </p>
+
+<h3>
+<a name="portability" class="anchor" href="#portability"><span class="octicon octicon-link"></span></a>Portability</h3>
+
+<p>In OMF the portability is a core part of this framework. Suppose again you have a big system having 150 tables composing the persistence, now due to something you must move your system to a Cloud or somewhere else. What happen with that 150 tables, indexes and all the stuff ? Or think about the changes required to that persistence model after any change in your source code ?.  In OMF that's not a problem at all because you store all your system in two tables, the way in how your system read/write relay on a simple persistence php file.</p>
+
+<p>In my experience using OMF as core component for persistence and object-relationship handling all becomes fluid and beauty, after core changes in source code (new features, bug fixes etc) i never again be concerned of what needs to be done in respect to sql changes because OMF will not change, it still be the same: two tables. </p>
+
+<h2>
+<a name="a-little-omf-example" class="anchor" href="#a-little-omf-example"><span class="octicon octicon-link"></span></a>A little OMF example</h2>
+
+<pre><code>/*
+[:Person]--{is_owner}--&gt;[:Car]
+[:Car]--{has_piece}--&gt;[:Piece]
+[:Person]--{tech_guy}--&gt;[:Car]
+[:Person]--{is_vendor}--&gt;[:Piece]
+*/
+$api = new OmfDb();
+//
+// 1. create the core objects:
+//
+list($nova) = $api-&gt;create("Car");
+list($jhon) = $api-&gt;create("Person");
+list($peter) = $api-&gt;create("Person");
+list($kelly) = $api-&gt;create("Person");
+list($carburator) = $api-&gt;create("Piece");
+list($doorlocker) = $api-&gt;create("Piece");
+// create some sample attributes
+$api-&gt;set($nova, "mark","Chevrolet");
+$api-&gt;set($nova, "model","Nova 74");
+$api-&gt;set($nova, "VIM","12345678");
+$api-&gt;set($jhon, "firstname","Jhonn");
+$api-&gt;set($jhon, "lastname","Doe");
+$api-&gt;set($carburator, "invoice_id","123");
+$api-&gt;set($doorlocker, "invoice_id","456");
+// 
+// 2. create the relationships between objects:
+//
+$api-&gt;createRelation($jhon, $nova, "is_owner");
+$api-&gt;createRelation($peter, $nova, "tech_guy");
+$api-&gt;createRelation($kelly, $carburator, "is_vendor");
+$api-&gt;createRelation($kelly, $doorlocker, "is_vendor");
+$api-&gt;createRelation($nova, $carburator, "has_piece");
+$api-&gt;createRelation($nova, $doorlocker, "has_piece");
+$api-&gt;createRelation($jhon, $nova, "owns_by");
+$api-&gt;createRelation($peter, $nova, "is_tech_guy");
+$api-&gt;createRelation($kelly, $nova, "is_car_vendor");
+$api-&gt;createRelation($peter, $nova, "support_guy");
+$api-&gt;createRelation($kelly, $nova, "support_guy");
+
+</code></pre>
+
+<p>Ok, now you know how OMF create the objects and its relationships, now a little example to show how to read the information, lets starting by finding a car by its VIM number:
+(the VIM is an attribute given to this example, is the legal Vehicle Identification Number in the United States, is not a core part in OMF at all...)</p>
+
+<pre><code>//
+// 3. query the system in various ways
+//
+$api = new OmfDb();
+$car_attributes = $api-&gt;$this-&gt;getObject('Car',array('VIM'=&gt;'1234567'));
+$car_id = $car_attributes["id"]; // "a unique id created by the framework"
+$car_mark = $car_attributes["mark"];  // "Chevrolet"
+$car_model = $car_attributes["model"]; // "Nova"
+
+// who is given support to this car ?
+//
+foreach($api-&gt;getParents($car_id, "support_guy") as $obj){
+   // getParents retrieve those objects having the relationship named "support_guy"
+   // pointing to this car. you can query any relationship name.
+   list($obj_id) = $obj;
+   $who_is_given_support = $api-&gt;get($obj_id, "firstname");
+}
+
+// what pieces has this car ? and who is the vendor of that piece ?
+//
+foreach($api-&gt;getChilds($car_id, "has_piece") as $obj){
+   // getChilds retrieve those objects having the relationship named "support_guy"
+   // having this car as parent.
+   list($piece_id) = $obj;
+   $invoice_id = $api-&gt;get($piece_id, "invoice_id");
+   // now query the vendor of that piece:
+   foreach($api-&gt;getChilds($piece_id, "is_vendor") as $obj2){
+      list($person_id) = $obj2;
+      $vendor_name = $api-&gt;get($person_id, "firstname"); // Kelly
+   }
+}
+
+</code></pre>
+
+<p>This little example becomes complicated and heavy in traditional persistence models, in OMF is Easy to understand, and persistence is now a problem at all: all this system is stored in two unique tables: omf_objects and omf_relations.</p>
+
+<p>Check the README.md for more detailed api examples.</p>
+      </section>
+      <footer>
+        <p>Project maintained by <a href="https://github.com/christiansalazar">christiansalazar</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
