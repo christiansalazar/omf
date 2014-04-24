@@ -49,10 +49,10 @@
 
 <p>Suppose you have a CAR, a PIECE and a PERSON as example of business classes. Now explore the possible relationships between that classes: A Car has Pieces, that last ones can be sold by a Person, and again, a Person can be the owner of that Car or the technician for that same Car.  In Omf this example can be draw as this:</p>
 
-<p>[:Car]--{has_piece}--&gt;[:Piece]
+<pre><code></code>[:Car]--{has_piece}--&gt;[:Piece]
 [:Person]--{is_owner}--&gt;[:Car]
 [:Person]--{tech_guy}--&gt;[:Car]
-[:Person]--{is_vendor}--&gt;[:Piece]</p>
+[:Person]--{is_vendor}--&gt;[:Piece]</code></pre>
 
 <p>In traditional persistence models you need at least 6 or 7 tables to persist this model, when system grows in size then the number of tables grows too. Using OMF you will always has 2 tables: omf_objects and omf_relationships, no more. </p>
 
@@ -114,7 +114,7 @@ $api-&gt;createRelation($kelly, $nova, "support_guy");
 // 3. query the system in various ways
 //
 $api = new OmfDb();
-$car_attributes = $api-&gt;$this-&gt;getObject('Car',array('VIM'=&gt;'1234567'));
+$car_attributes = $api-&gt;getObject('Car',array('VIM'=&gt;'1234567'));
 $car_id = $car_attributes["id"]; // "a unique id created by the framework"
 $car_mark = $car_attributes["mark"];  // "Chevrolet"
 $car_model = $car_attributes["model"]; // "Nova"
