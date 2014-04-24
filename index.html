@@ -146,6 +146,19 @@ foreach($api-&gt;getChilds($car_id, "has_piece") as $obj){
 
 <p>This little example becomes complicated and heavy in traditional persistence models, in OMF is Easy to understand, and persistence is now a problem at all: all this system is stored in two unique tables: omf_objects and omf_relations.</p>
 
+<h3>
+<a name="omfdb" class="anchor" href="#omfdb">
+  <span class="octicon octicon-link"></span></a>Why "$api = new OmfDb();" ?</h3>
+
+<p>
+  You can see in the above example this line: "$api = new OmfDb;".  This is very important and becomes part of what i call: 
+  "the omf portability". This $api instance is targeting a traditional database (table based) for storing the objects. 
+  By creating a new class implementing the required software interfaces then you can move your entire system to a 
+  different persistence model without make any change to your business logic.  By default OMF becomes ready with a class
+  named OmfDb ready to be used and designed to persist objects in two tables: omf_objects and omf_relations, this two tables
+  are required by this class (OmfDb) and are not part of the OMF core.
+</p>
+
 <p>Check the README.md for more detailed api examples.</p>
       </section>
       <footer>
