@@ -1,18 +1,17 @@
 <?php
-class OmfTest extends OmfDb {
+require_once("../../../../wp-config.php");
+require_once("OmfPdo.php");
+class OmfTest extends OmfPdo {
 	private function log($what,$data){
 		printf("[%s][%s]\n",$what,$data);
 	}
 	public function run(){
-		$this->testlowlevelobjectapi();	
-		$this->testlowlevelindexapi();
+		$this->testlowlevelobjectapi();
 		$this->testlowlevelrelationsapi();
 		$this->testhighlevelcoreapi();
+		$this->testlowlevelindexapi();
 		$this->testhighlevelmetaapi();
-		$this->testlist();
-		$this->testfetch();
-		//$this->testfetchsort();
-		$this->testgetobject();
+		$this->testhighlevelfinders();
 	}
 	public function testlowlevelobjectapi(){
 		printf("[".__METHOD__."] ... ");
@@ -23,6 +22,8 @@ class OmfTest extends OmfDb {
 			array('test',123,999),
 		);
 		$this->deleteObjByClassname("test");
+		$objects = $this->listObjects("test");
+		if(count($objects) != 0) throw new Exception("listObjects fails must be 0. count=".count($objects));
 		$ids=array();
 		foreach($ar as $t){
 			list($classname, $data, $aux_id) = $t;
@@ -36,24 +37,21 @@ class OmfTest extends OmfDb {
 			if($_id != $id) throw new Exception("id not equal");
 			if($_classname != $classname) throw new Exception("classname fail");
 			if($_data != $data) throw new Exception("data fail");
-			if($_aux_id != $aux_id) throw new Exception("aux_id fail");
 			$ids[] = $id;
 		}
 		$objects = $this->listObjects('test');
-		if(count($objects) != 3) throw new Exception("listObjects fails");
+		if(count($objects) != 3) throw new Exception("listObjects fails. count=".count($objects));
+		assert('3===$this->countObjectsByClassName("test")');
 		foreach($objects as $obj){
 			list($id, $classname, $aux_id, $data) = $this->readObject($obj);
 			$obj2 = $this->loadObject($id);
 			list($_id, $_classname, $_aux_id, $_data) = $obj2;
 			if($_classname != $classname) throw new Exception("classname fail");
 			if($_data != $data) throw new Exception("data fail");
-			if($_aux_id != $aux_id) throw new Exception("aux_id fail");
 			$this->setObjectData($id, 777);
-			$this->setObjectAuxId($id, 888);
 			$obj3 = $this->loadObject($id);
 			list($id3,$classname3, $aux_id3, $data3) = $obj3;
 			if($data3 != 777) throw new Exception("setObjectData fails on id=".$id);
-			if($aux_id3 != 888) throw new Exception("setObjectAuxId fails on id=".$id);
 		}
 		foreach($ids as $id){
 			$this->deleteObjById($id);
@@ -61,35 +59,6 @@ class OmfTest extends OmfDb {
 		}
 		$objects = $this->listObjects('test');
 		if(count($objects) != 0) throw new Exception("listObjects fails. objects not deleted.");
-		printf("OK\n");
-	}
-	public function testlowlevelindexapi(){
-		printf("[".__METHOD__."] ... ");
-		$this->getDb()->createCommand()->delete("omf_index");
-		$hv = hash('md5','test');
-		$hv2 = hash('md5','test2');
-		$a = $this->createObject("test");
-		$b = $this->createObject("test");
-		$c = $this->createObject("test");
-
-		$this->insertIndex('test', 't1', $hv, $a);
-		$_hv = $this->findIndexValue('test', 't1', $a);
-		if($_hv != $hv) throw new Exception("findIndexValue must return: ".$hv.", instead returns: ".$_hv);
-		$objects = $this->findIndex('test', 't1', $hv);
-		if(count($objects) != 1) throw new Exception("must be 1");
-		if($objects[0]['object_id'] != $a) throw new Exception("must be ".$a);
-
-		$this->updateIndex('test', 't1', $hv2, $a);
-		$_hv2 = $this->findIndexValue('test', 't1', $a);
-		if($_hv2 != $hv2) throw new Exception("findIndexValue must return: ".$hv2.", instead returns: ".$_hv2);
-		
-		$this->getDb()->createCommand()->delete("omf_index");
-		$this->insertIndex('test', 't1' , $hv, $a);	
-		$this->insertIndex('test', 't1' , $hv, $b);	
-		$this->insertIndex('test', 't1' , $hv, $c);
-		if(3 != $this->countIndex('test', 't1', $hv)) throw new Exception("must be 3");
-
-		$this->getDb()->createCommand()->delete("omf_index");
 		printf("OK\n");
 	}
 	public function testlowlevelrelationsapi(){
@@ -279,6 +248,35 @@ class OmfTest extends OmfDb {
 
 		printf("OK\n");
 	}
+	public function testlowlevelindexapi(){
+		printf("[".__METHOD__."] ... ");
+		$this->deleteAllIndexRecords();
+		$hv = hash('md5','test');
+		$hv2 = hash('md5','test2');
+		$a = $this->createObject("test");
+		$b = $this->createObject("test");
+		$c = $this->createObject("test");
+
+		$this->insertIndex('test', 't1', $hv, $a);
+		$_hv = $this->findIndexValue('test', 't1', $a);
+		if($_hv != $hv) throw new Exception("findIndexValue must return: ".$hv.", instead returns: ".$_hv);
+		$objects = $this->findIndex('test', 't1', $hv);
+		if(count($objects) != 1) throw new Exception("must be 1. ".json_encode($objects));
+		if($objects[0] != $a) throw new Exception("must be ".$a);
+
+		$this->updateIndex('test', 't1', $hv2, $a);
+		$_hv2 = $this->findIndexValue('test', 't1', $a);
+		if($_hv2 != $hv2) throw new Exception("findIndexValue must return: ".$hv2.", instead returns: ".$_hv2);
+		
+		$this->deleteAllIndexRecords();
+		$this->insertIndex('test', 't1' , $hv, $a);	
+		$this->insertIndex('test', 't1' , $hv, $b);	
+		$this->insertIndex('test', 't1' , $hv, $c);
+		if(3 != $this->findIndex('test', 't1', $hv,0,-1,true)) 
+			throw new Exception("must be 3");
+		$this->deleteAllIndexRecords();
+		printf("OK\n");
+	}
 	public function testhighlevelmetaapi(){
 		printf("[".__METHOD__."] ... ");
 		$this->deleteObjects("test");
@@ -287,8 +285,8 @@ class OmfTest extends OmfDb {
 
 		list($a)  = $this->create("test");
 		$this->set($a, "t1", "123");
-		$b = $this->getChild($a, $t1);
-		list($b_id, $classname, $aux_id, $data) = $b;
+		$b = $this->getChilds($a, $t1);
+		list($b_id, $classname, $aux_id, $data) = $b[0];
 		if($classname != "metadata") throw new Exception("must be metadata");
 		if($data != "123") throw new Exception("must be 123");
 		$this->deleteObject($a);
@@ -339,7 +337,7 @@ class OmfTest extends OmfDb {
 		if('456' != $this->get($a,'t2')) throw new Exception("must be 456");
 		$this->deleteObject($a);
 
-		$this->getDb()->createCommand()->delete("omf_index");
+		$this->deleteAllIndexRecords();
 		list($a)  = $this->create("test");
 		$this->set($a, array("t1"=>'123', "t2"=>'456'));
 		$v1 = $this->findIndexValue("test",$this->buildMetanameRel("t1"),$a);
@@ -348,281 +346,77 @@ class OmfTest extends OmfDb {
 		if($v2 != hash("md5","456")) throw new Exception("must be 456");
 		$this->deleteObject($a);
 
-		$this->getDb()->createCommand()->delete("omf_index");
-		list($a)  = $this->create("test");
-		$this->set($a, array("t1"=>'123', "t2"=>'456'));
-		list($b)  = $this->create("test");
-		$this->set($b, array("t1"=>'123', "t2"=>'789'));
-		list($c)  = $this->create("test");
-		$this->set($c, array("t1"=>'222', "t2"=>'012'));
-
-		$r = $this->find("test","t1","123");
-		if(count($r) != 2) throw new Exception("must be 2. ");
-		if($this->get($r[0][0],"t1") != "123") throw new Exception("must be 123");
-		if($this->get($r[1][0],"t1") != "123") throw new Exception("must be 123");
-		$r = $this->find("test","t2","789");
-		if(count($r) != 1) throw new Exception("must be 1");
-		if($this->get($r[0][0],"t2") != "789") throw new Exception("must be 789");
-		$r = $this->find("test","t1","789");
-		if(count($r) != 0) throw new Exception("must be 0");
-		$r = $this->find("test","t1","999");
-		if(count($r) != 0) throw new Exception("must be 0");
-
-		$this->deleteObject($a);
-		$this->deleteObject($b);
-		$this->deleteObject($c);
-
 		$this->deleteObjects("test");
-		//$this->getDb()->createCommand()->delete("omf_index");
-		printf("OK\n");
-	}
-	public function testlist(){
-		printf("[".__METHOD__."] ... ");
+		$this->deleteAllIndexRecords();
+
+		// test getAttributes
+		list($a) = $this->create("test");
+		list($b) = $this->create("test");
+		$this->set($a,"k1","k1");
+		$this->set($a,"k2","k2");
+		$this->set($a,"k3","k3");
+		$this->set($b,"z1","z1");
+		$this->set($b,"z2","z2");
+		$this->set($b,"z3","z3");
+		$ra = $this->getAttributes($a);
+		$rb = $this->getAttributes($b);
+		assert('$ra["k1"]=="k1"');
+		assert('$ra["k2"]=="k2"');
+		assert('$ra["k3"]=="k3"');
+		assert('$rb["z1"]=="z1"');
+		assert('$rb["z2"]=="z2"');
+		assert('$rb["z3"]=="z3"');
 		$this->deleteObjects("test");
-		
-		$n1 = 10;
-		$n2 = 100;
-
-		// keeps a list of reincident values, counters per value
-		$a = array();
-		for($i=0;$i<$n1;$i++)
-			$a[$i] = 0;
-		// a fixed list to be used for comparison
-		$stor=array();
-		// create objects, having an attribute named 'x' having value
-		// that value stored and counted in $a for future comparison
-		for($i=0;$i<$n2;$i++){
-			list($id) = $this->create('test');
-			$v = rand(0,$n1-1);
-			$a[$v]++;
-			$this->set($id, 'x', $v);
-			$stor[$id] = array();
-			$stor[$id]['i'] = $i;
-			$stor[$id]['x'] = $v;
-		}
-		// now compare the results when calling the method
-		foreach($a as $v=>$counter){
-			$counted = $this->listObjectsBy('test','x',$v,null,null,true);
-			if($counted != $counter)
-				throw new Exception(sprintf("value %s was generated %s times "
-					."but listObjects detects: %s",$v,$counter,$counted));
-
-			$objects = $this->listObjectsBy('test','x',$v);
-			$counted = count($objects);
-			if($counted != $counter)
-				throw new Exception(sprintf("value %s was generated %s times "
-					."but listObjects detects: %s",$v,$counter,$counted));
-
-			//test pagination
-			// we have a full objects list, having x=$v in all its items
-			// proceeding to list this objects having x=$v again but with 
-			// pagination, having each page the same items in comparison
-			// to the objects array
-			//
-			$ipp=3;
-			$pages = $this->calculatePages($counted, $ipp);
-			for($page=0;$page<$pages;$page++){
-				$offset = $this->calculatePageOffset($ipp, $page);
-				$paged = $this->listObjectsBy('test','x',$v, $ipp, $offset);
-				$len = count($paged);
-				for($i=0;$i<$len;$i++){
-					list($id1,$cn1,$au1,$da1) = $this->readObject($objects[$offset + $i]);
-					list($id2,$cn2,$au2,$da2) = $this->readObject($paged[$i]);
-					if($id1 !== $id2) throw new Exception("error");
-					if($cn1 !== $cn2) throw new Exception("error");
-					if($au1 !== $au2) throw new Exception("error");
-					if($da1 !== $da2) throw new Exception("error");
-				}
-			}			
-		}
-
-		// test using an inexisting status, so nothing must be returned
-		// must never return null, it will break foreach statements
-
-		if(0 !== $this->countObjectsByClassname(null)) throw new Exception("error");
-		if(null === $this->listObjects(null)) throw new Exception("error");
-
-		if(0 !== $this->listObjectsBy(null,null,null,0,0,true)) throw new Exception("error");
-		if(0 !== $this->listObjectsBy("test","xx",null,0,0,true)) throw new Exception("error");
-		if(0 !== $this->listObjectsBy("test","x","???",0,0,true)) throw new Exception("error");
-
-		if(null === $this->listObjectsBy(null,null,null)) throw new Exception("error");
-		if(null === $this->listObjectsBy("test",null,null)) throw new Exception("error");
-		if(null === $this->listObjectsBy("test","xx",null)) throw new Exception("error");
-		if(null === $this->listObjectsBy("test","x","???")) throw new Exception("error");
-
-		if(0 !== $this->find(null,null,null,0,0,true)) throw new Exception("error");
-		if(0 !== $this->find("test","xx",null,0,0,true)) throw new Exception("error");
-		if(0 !== $this->find("test","x","???",0,0,true)) throw new Exception("error");
-
-		if(null === $this->find(null,null,null,0,0,false)) throw new Exception("error");
-		if(null === $this->find("test",null,null,0,0,false)) throw new Exception("error");
-		if(null === $this->find("test","xx",null,0,0,false)) throw new Exception("error");
-		if(null === $this->find("test","x","???",0,0,false)) throw new Exception("error");
-
-		foreach($this->listObjects(null) as $dummy){ }
-		foreach($this->listObjects("none") as $dummy){ }
-		foreach($this->listObjectsBy(null,null,null,0,0,false) as $dummy){ }
-		foreach($this->find(null,null,null,0,0,false) as $dummy){ }
-
-		$this->deleteObjects("test");
-		$ipp=2;
-		$items=array();
-		for($i=0;$i<5;$i++){
-			list($id) = $this->create("test");
-			$items[] = $id;
-		}
-		$this->set($items[0],'test','x');	
-		$this->set($items[1],'test','y');	
-		$this->set($items[2],'test','x');	
-		$this->set($items[3],'test','y');	
-		$this->set($items[4],'test','x');	
-
-		if(3 !== $this->listObjectsBy("test","test","x",0,0,true)) throw new Exception("error");
-		if(2 !== $this->listObjectsBy("test","test","y",0,0,true)) throw new Exception("error");
-		if(5 !== $this->listObjectsBy("test",null,null,0,0,true)) throw new Exception("error");
-	
+		$this->deleteAllIndexRecords();
 		printf("OK\n");
 	}
 
-	public function testfetch(){
+	public function testhighlevelfinders(){
 		printf("[".__METHOD__."] ... ");
 		$this->deleteObjects("test");
-
-		$ipp=2;
-		$items=array();
-
-		for($i=0;$i<5;$i++){
-			list($id) = $this->create("test");
-			$items[] = $id;
-			$this->set($id,'a','a'.$id);
-			$this->set($id,'b','b'.$id);
-			$this->set($id,'c','c'.$id);
-		}
-
-		$this->set($items[0],'test','x');	
-		$this->set($items[1],'test','y');	
-		$this->set($items[2],'test','x');	
-		$this->set($items[3],'test','y');	
-		$this->set($items[4],'test','x');	
-
-		if(null === $this->fetch(null,null,null,null,null,null)) throw new Exception("error");
-		foreach($this->fetch(null,null,null,null,null,null) as $dummy) { }
-		if(null === $this->fetch('test',array(),array(),null,null,true)) throw new Exception("error");
-		if(null === $this->fetch('test',array(),array(),null,null,true)) throw new Exception("error");
-
-		if(5 !== $this->fetch('test',null,null,-1,0,true)) throw new Exception("error");
-		if(null === $this->fetch('test',null,null,-1,0,false)) throw new Exception("error");
-		if(5 !== count($this->fetch('test',null,null,-1,0,false))) throw new Exception("error");
-
-		if(2 !== count($this->fetch('test',null,null,2,0,false))) throw new Exception("error");
-		if(2 !== count($this->fetch('test',null,null,2,2,false))) throw new Exception("error");
-		if(1 !== count($this->fetch('test',null,null,2,4,false))) throw new Exception("error");
-		
-		$r = $this->fetch('test',null,array('a','b'),-1,0,false);
-		foreach($r as $id=>$attr){
-			if($attr['a'] !== 'a'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
-			if($attr['b'] !== 'b'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
-			if(isset($attr['c'])) throw new Exception("error.id=".$id.".c must not exists here");
-		}
-
-		$f = array('bad'=>'filter');
-		if(0 !== $this->fetch('test',$f,null,-1,0,true)) throw new Exception("error");
-		if(0 !== count($this->fetch('test',$f,null,-1,0,false))) throw new Exception("error");
-
-		$f = array('test'=>'x');
-		if(3 !== $this->fetch('test',$f,null,-1,0,true)) throw new Exception("error");
-		$f = array('test'=>'y');
-		if(2 !== $this->fetch('test',$f,null,-1,0,true)) throw new Exception("error");
-
-		$f = array('test'=>'x');
-		if(3 !== count($this->fetch('test',$f,null,-1,0,false))) throw new Exception("error");
-		$f = array('test'=>'y');
-		if(2 !== count($this->fetch('test',$f,null,-1,0,false))) throw new Exception("error");
-
-		$f = array('test'=>'x');
-		$r = $this->fetch('test',$f,array('a','b'),-1,0,false);
-		foreach($r as $id=>$attr){
-			if($attr['a'] !== 'a'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
-			if($attr['b'] !== 'b'.$id) throw new Exception("error.id=".$id.",".json_encode($attr));
-			if(isset($attr['c'])) throw new Exception("error.id=".$id.".c must not exists here");
-		}
-
-		printf("OK\n");
-	}
-
-	private function _printA($result){
-		printf("\n");
-		$index=0;
-		foreach($result as $id=>$attr){
-			printf("%-10s %-10s %-10s\n",
-				$index,$id,$attr['a']);
-			$index++;
-		}
-	}
-
-	/*
-	public function testfetchsort(){
-		printf("[".__METHOD__."] ... ");
+		list($a) = $this->create("test");	
+		list($b) = $this->create("test");	
+		list($c) = $this->create("test");
+		list($d) = $this->create("test");
+		$this->set($a,"xkey","1");
+		$this->set($b,"xkey","2");
+		$this->set($c,"xkey","3");
+		$this->set($d,"xkey","2");
+		$r = $this->findByAttribute("test","xkey","1",0,-1,true);
+		assert('1==$r');
+		$r = $this->findByAttribute("test","xkey","2",0,-1,true);
+		assert('2==$r');
+		$r = $this->findByAttribute("test","xkey","9",0,-1,true);
+		assert('0==$r');
+		$r = $this->findByAttribute("test","xkey","2");	
+		assert('2==count($r)');
+		assert('$r[0][0]==$b');
+		assert('$r[1][0]==$d');
 		$this->deleteObjects("test");
-
-		$ipp=2;
-		$items=array();
-
-		for($i=0,$n=10;$i<5;$i++,$n+=10){
-			list($id) = $this->create("test");
-			$items[] = $id;
-			$this->set($id,'a',$n);
-		}
-
-		$r1 = $this->fetch('test',null,array('a'),-1,0,false,"");
-		$this->_printA($r1);	
-
-		$r2 = $this->fetch('test',null,array('a'),3,1,false,array('a'));
-		$this->_printA($r2);	
-
-		printf("OK\n");
-	}
-	*/
-
-	public function testgetobject(){
-		printf("[".__METHOD__."] ... ");
+		// pager finder
+		list($a) = $this->create("test");//0
+		list($b) = $this->create("test");//1
+		list($c) = $this->create("test");//2 *
+		list($d) = $this->create("test");//3 *
+		list($e) = $this->create("test");//4 *
+		list($f) = $this->create("test");//5
+		list($g) = $this->create("test");//6
+		list($h) = $this->create("test");//7
+		foreach(array($a,$b,$c,$d,$e,$f,$g,$h) as $objid)
+			$this->set($objid,"key","1");
+		$r = $this->findByAttribute("test","key","1",0,-1,true);
+		assert('8==$r');
+		$r = $this->findByAttribute("test","key","1",2,3,true);
+		assert('3==$r');
+		$r = $this->findByAttribute("test","key","1",2,3);
+		assert('$c==$r[0][0]');
+		assert('$d==$r[1][0]');
+		assert('$e==$r[2][0]');
 		$this->deleteObjects("test");
-		
-		list($id0) = $this->create('test');
-		$this->set($id0,'a','a0');
-		$this->set($id0,'b','b0');
-
-		list($id1) = $this->create('test');
-		$this->set($id1,'a','a1');
-		$this->set($id1,'b','b1');
-
-		if(null !== $this->getObject('test',null)) throw new Exception("error");
-		if(null !== $this->getObject('test',array())) throw new Exception("error");
-		if(null !== $this->getObject('test',array('x'=>'y'))) throw new Exception("error");
-		if(null !== $this->getObject('test',array('a'=>'y'))) throw new Exception("error");
-
-		$ax = $this->getObject('test',array('a'=>'a0'));
-		$ay = $this->getObject('test',array('id'=>$id0));
-		$az = $this->getObject('test',array('id'=>$id1));
-
-		if(null === $ax) throw new Exception("error");
-		if(null === $ay) throw new Exception("error");
-		if(null === $az) throw new Exception("error");
-
-		foreach(array($ax,$ay,$az) as $index=>$obj){
-			if($index <= 1){
-				if($id0 !== $obj['id']) throw new Exception("error.index=".$index);
-				if('test' !== $obj['classname']) throw new Exception("error.index=".$index);
-				if("a0" !== $obj['a']) throw new Exception("error.index=".$index);
-				if("b0" !== $obj['b']) throw new Exception("error.index=".$index);
-			}else{
-				if($id1 !== $obj['id']) throw new Exception("error.index=".$index);
-				if('test' !== $obj['classname']) throw new Exception("error.index=".$index);
-				if("a1" !== $obj['a']) throw new Exception("error.index=".$index);
-				if("b1" !== $obj['b']) throw new Exception("error.index=".$index);
-			}
-		}
 		printf("OK\n");
 	}
 }
+printf("OmfTest in progress..\n");
+$inst = new OmfTest();
+$inst->run();
+printf("\nend\n");

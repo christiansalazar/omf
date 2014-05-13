@@ -2,16 +2,14 @@
 /**
  * OmfBase 
  *	
- *	
  * 
- * @uses CApplicationComponent (only when used in yiiframework)
  * @abstract	
  * @package 
- * @version 1.0
+ * @version 1.1
  * @author Christian Salazar  <christiansalazarh@gmail.com> @salazarchris74
  * @license FREEBSD http://opensource.org/licenses/bsd-license.php
  */
-abstract class OmfBase extends CApplicationComponent {
+abstract class OmfBase {
 	/**
 	 * readObject 
 	 * 	read an object from an indexed array and returns a single array.
@@ -85,9 +83,7 @@ abstract class OmfBase extends CApplicationComponent {
 	 * @seealso readObject
 	 * @return array indexed array array('id','classname','aux_id','data')
 	 */
-	abstract public function listObjects($classname, $limit=-1, $offset=0);
-	abstract public function listObjectsBy($classname, $attribute, $value, 
-		$limit=-1, $offset=0, $counter_only=false);
+	abstract public function listObjects($classname);
 
 	/**
 	 * createRel 
@@ -143,8 +139,7 @@ abstract class OmfBase extends CApplicationComponent {
 	abstract public function deleteObjByClassname($classname);
 	abstract public function insertIndex($classname, $metaname, $hashvalue, $object_id);
 	abstract public function updateIndex($classname, $metaname, $hashvalue, $object_id);
-	abstract public function countIndex($classname, $metaname, $hashvalue);
-	abstract public function findIndex($classname, $metaname, $hashvalue, $offset=0, $limit=-1);
+	abstract public function findIndex($classname, $metaname, $hashvalue, $offset=0, $limit=-1,$count_only=false);
 	abstract public function findIndexValue($classname, $metaname, $object_id);
 
 	/**
@@ -180,24 +175,6 @@ abstract class OmfBase extends CApplicationComponent {
 		while($this->countObjectsByClassname($classname) > 0)
 			foreach($this->listObjects($classname,1000) as $row)
 				$this->deleteObject($row['id']);
-	}
-
-	/**
-	 * setIndex 
-	 *	save a value in the index database. 
-	 * @param mixed $classname the object_id classname
-	 * @param mixed $metaname  the property name of this object_id to be saved
-	 * @param mixed $metavalue the property value of this object_id to be saved
-	 * @param mixed $object_id the object whos remaining attributes belongs to.
-	 * @access public
-	 * @return void
-	 */
-	public function setIndex($classname, $metaname, $metavalue, $object_id){
-		$hv = hash('md5',$metavalue);
-		if($hv != $this->findIndexValue($classname, $metaname, $object_id)){
-			$this->insertIndex($classname, $metaname,$hv, $object_id);
-		}else
-			$this->updateIndex($classname, $metaname,$hv, $object_id);
 	}
 
 	/**
@@ -342,20 +319,7 @@ abstract class OmfBase extends CApplicationComponent {
 			}
 		return $objects;
 	}
-	/**
-	 * getChild 
-	 *	same as getChilds, but returning only a single object, not an array 
-	 * @param integer $object_id 
-	 * @param string $rel_name 
-	 * @param string $classname 
-	 * @access public
-	 * @return array a omf_object array(id, classname, aux_id, data)
-	 */
-	public function getChild($object_id, $rel_name, $classname=''){
-		foreach($this->getChilds($object_id, $rel_name, $classname) as $obj)
-			return $obj;
-		return null;
-	}
+
 	/**
 	 * getParents
 	 *	is a helper method, instead of return relationships it returns objects
@@ -386,21 +350,6 @@ abstract class OmfBase extends CApplicationComponent {
 			if($found == false) $objects[] = $object;
 		}
 		return $objects;
-	}
-	
-	/**
-	 * getParent
-	 *	(HELPER) returns the parent object of $obj using the relationship named 'parent'
-	 *	you can create a child object by calling: create($a,"","",$b) (a is child of b)
-	 *	then you can call: $must_be_a = api->getParent($b);
-	 * 
-	 * @access public
-	 * @return omf_object or null if it has no parents
-	 */
-	public function getParent($obj){
-		foreach($this->getParents($obj,"parent") as $p)
-			return $p; // maybe has more than one parent, but return the first one
-		return null; // has no parents
 	}
 
 	/**
@@ -437,14 +386,14 @@ abstract class OmfBase extends CApplicationComponent {
 		}else{
 			$_metaname = $this->buildMetanameRel($metaname);
 			if(null != 
-				($object = $this->getChild($object_id,$_metaname,'metadata'))){
-				$this->setObjectData($object[0],$metavalue);
+				($object = $this->getChilds($object_id,$_metaname,'metadata'))){
+				$this->setObjectData($object[0][0],$metavalue);
 			}else{
 				$newobj = $this->create("metadata", $metavalue, $object_id);
 				$this->createRel($object_id, $newobj[0], $_metaname, "");
 			}
 			list($p_id, $p_classname) = $this->loadObject($object_id);
-			$this->setIndex($p_classname, $_metaname, $metavalue, $object_id);
+			$this->setIndex($p_classname, $metaname, $metavalue, $object_id,$dbg);
 		}
 	}
 
@@ -458,11 +407,32 @@ abstract class OmfBase extends CApplicationComponent {
 	 * @return string the metadata object.data
 	 */
 	public function get($object_id, $metaname, $defvalue=""){
-		$object = $this->getChild($object_id, 
+		$object = $this->getChilds($object_id, 
 			$this->buildMetanameRel($metaname), "metadata");
 		if($object == null) return $defvalue;
-		list($id, $classname, $aux_id, $data) = $object;
+		list($id, $classname, $aux_id, $data) = $object[0];
 		return $data;
+	}
+
+	/**
+	 * setIndex 
+	 *	save a value in the index database. 
+	 * @param mixed $classname the object_id classname
+	 * @param mixed $metaname  the property name of this object_id to be saved
+	 * @param mixed $metavalue the property value of this object_id to be saved
+	 * @param mixed $object_id the object whos remaining attributes belongs to.
+	 * @access public
+	 * @return void
+	 */
+	public function setIndex($classname, $metaname, $metavalue, $object_id){
+		$_metaname = $this->buildMetanameRel($metaname);
+		$hv = hash('md5',$metavalue);
+		$found_hv = $this->findIndexValue($classname, $_metaname, $object_id);
+		if($hv !== $found_hv){
+			$this->insertIndex($classname, $_metaname,$hv, $object_id);
+		}else{
+			$this->updateIndex($classname, $_metaname,$hv, $object_id);
+		}
 	}
 
 	/**
@@ -486,151 +456,6 @@ abstract class OmfBase extends CApplicationComponent {
 	}
 
 	/**
-	 * find 
-	 * 	find an object by its classname, metaname and metavalue.
-	 *	very similar to listObjectsBy but returning omf_objects.
-	 *	options to paginate and return only a counter.
-	 *	
-	 * @param string $classname having this classname
-	 * @param string $meta_name having the desired property name
-	 * @param string $meta_value having the desired property value
-	 * @param integer $offset offset 
-	 * @param integer $limit how many objects must read
-	 * @param bool $count_only true to return only a row counter
-	 * @access public
-	 * @return array array(omf_object,..., N) each one having a matching property
-	 */
-	public function find($classname,$meta_name,$meta_value,
-		$offset=0,$limit=-1,$count_only=false){
-		$objects = array();
-		if($count_only == true){
-			return $this->listObjectsBy($classname,$meta_name, 
-				$meta_value, $limit, $offset, $count_only);
-		}else{
-		foreach($this->listObjectsBy(
-			$classname,$meta_name, $meta_value, 
-				$limit, $offset, $count_only) as $obj)
-			$objects[] = $this->readObject($obj);
-		return $objects;
-		}
-	}
-
-	/**
-	 * fetch
-	 *	retrive paginated, filtered and assembled results from the storage.
-	 *
-		usage:
-
-		$objects = $api->fetch('Person',
-			array('favoritecolor'=>'blue'),	// filter
-			array('firstname','lastname',),	// fill this attributes
-			3,								// only 3 objects
-			4,								// starting from index position 4
-			false							// false mean: return objects
-											// true mean: count only
-		);
-
-		foreach($objects as $obj_id=>$attributes){
-			printf("ID: %s\n".obj_id);
-			foreach($attributes as $name=>$value)
-				printf("[%s] = [%s]\n", $name, $value);
-		}
-
-
-	 * @param mixed $classname the class name to find for
-	 * @param array $filter key-value pair, attribute to be filtered for
-	 * @param array $attributes key-value pair, attr. to be present in results
-	 * @param int $limit 
-	 * @param int $offset 
-	 * @param bool $counteronly when true this method returns an integer 
-	 * @access public
-	 * @return array array('someid'=>array('name1'=>'value','name2'=>'value',))
-	 */
-	public function fetch($classname,$filter=null,$attributes=null,$limit=-1,$offset=0,$counteronly=false,$sortAttributes=null){
-		$objects = array();
-		if(!$filter){
-    		if($counteronly == true){
-    			return $this->countObjectsByClassName($classname);
-    		}else{
-    			$objects = $this->listObjectsBy($classname,null,null,$limit,$offset);
-    		}
-    	}else{
-    		$name=""; $value="";
-    		if($filter != null)
-			foreach($filter as $_name=>$_value) { $name = $_name; 
-				$value = $_value; }
-    		if($counteronly == true){
-    			return $this->listObjectsBy($classname,
-					$name,$value,null,null,true);
-    		}else
-    			$objects = $this->listObjectsBy($classname, $name, 
-					$value,$limit,$offset);
-    	}
-		//assembly the required object properties to the final result
-		$result = array();
-		foreach($objects as $obj){
-			list($id,$cn,$ax,$data) = $this->readObject($obj);
-			$row = array();
-			if($attributes != null)
-			foreach($attributes as $name){
-				if($name == 'id'){
-					$row[$name] = $id;
-				}elseif($name == 'data'){
-					$row[$name] = $data;
-				}else
-				$row[$name] = $this->get($id, $name);
-			}
-			$result[$id] = $row;
-		}
-		return $result;
-	}
-
-	/**
-	 * getObject
-	 *	returns a single object in a form of array having all its propertys
-	 * 
-	 *	sample return value:
-	 *	
-	 *		array('id'=>123,'classname'=>'some','data'=>'??',
-	 *			'firstname'=>'jhonn','lastname'=>'doe');
-	 *
-	 *
-	 * @param string $classname 
-	 * @param array $searchbyAttributes array('findbywhatAttr'=>'Value')
-	 * @access public
-	 * @return array null if no objects found or an array.
-	 */
-	public function getObject($classname, $searchbyAttributes){
-		$filter_attr=''; $filter_value='';
-		if(empty($searchbyAttributes)) return null;
-		foreach($searchbyAttributes as $key=>$val){
-			$filter_attr = $key; $filter_value = $val;
-		}
-		$object = array();
-		$omf_object = null;
-		if($filter_attr == 'id'){
-			$omf_object = $this->loadObject($filter_value);
-		}else{
-			foreach($this->find($classname, $filter_attr, $filter_value, 0,1,false) 
-				as $_omf_object)
-				$omf_object = $_omf_object;
-		}
-		if(empty($omf_object)) return null;
-		list($obj_id,$_classname,$aux,$data) = $omf_object;
-		$object['id'] = $obj_id;
-		$object['classname'] = $classname;
-		$object['data'] = $data;
-		foreach($this->listPropertys($obj_id) as $attr)
-			$object[$attr] = $this->get($obj_id,$attr);
-		return $object;
-	}
-
-	protected function genid($id=0){
-		if($id > 0) return $id;
-		return microtime();
-	}
-
-	/**
 	 * buildMetanameRel
 	 *	used to create relationship names for metadata objects
 	 * 	example:  [person]--[dateofbirth]-->[value:Metadata, {data=08/06/1974}]
@@ -645,13 +470,34 @@ abstract class OmfBase extends CApplicationComponent {
 		return "metaname_".$rel_name;
 	}
 
-	public function calculatePages($total_items, $items_per_page){
-		$pages = (int)($total_items / $items_per_page);
-		$pages += (((int)($pages * $items_per_page)) !== $total_items);
-		return $pages;
-	}
-	public function calculatePageOffset($items_per_page, $page){
-		return $items_per_page * $page;
+	public function findByAttribute($classname, $metaname, $value,$offset=0,$limit=-1,$count_only=false){
+		$_metaname = $this->buildMetanameRel($metaname);
+		if($results = $this->findIndex($classname, $_metaname, md5($value),
+			$offset,$limit,$count_only)){
+				if(true==$count_only)
+					return $results;
+			$objects = array();
+			foreach($results as $obj_id){
+				$objects[] = $this->loadObject($obj_id);
+			}
+			return $objects;
+		}
+		else
+		return null;
 	}
 
+	/**
+	 * getAttributes
+	 *	return an array having all declared attributes and values for a given object
+	 * 
+	 * @param int $object_id 
+	 * @access public
+	 * @return array array("attr1"=>"value",...)
+	 */
+	public function getAttributes($object_id){
+		$r=array();
+		foreach($this->listPropertys($object_id) as $property_name)
+			$r[$property_name] = $this->get($object_id, $property_name);
+		return $r;
+	}
 }
