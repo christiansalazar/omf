@@ -67,6 +67,14 @@ abstract class OmfBase extends CApplicationComponent {
 	abstract public function setObjectData($object_id, $data);
 	abstract public function setObjectAuxId($object_id, $aux_id);
 	abstract public function countObjectsByClassname($classname);
+	/**
+	 * enumClassnames 
+	 * 
+	 * @abstract
+	 * @access public
+	 * @return array()  array("someclass"=>objects, ... , ...)
+	 */
+	abstract public function enumClassnames();
 	abstract public function setRelationData($rel_id, $data);
 
 	/**
@@ -618,7 +626,7 @@ abstract class OmfBase extends CApplicationComponent {
 		if(empty($omf_object)) return null;
 		list($obj_id,$_classname,$aux,$data) = $omf_object;
 		$object['id'] = $obj_id;
-		$object['classname'] = $classname;
+		$object['classname'] = $_classname;
 		$object['data'] = $data;
 		foreach($this->listPropertys($obj_id) as $attr)
 			$object[$attr] = $this->get($obj_id,$attr);

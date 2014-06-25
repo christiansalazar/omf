@@ -25,7 +25,18 @@ class OmfDb extends OmfBase {
 	public function _relationship_name(){
 		return "omf_relationship";
 	}
-	
+	public function enumClassnames(){
+		$list=array();
+		$rows = $this->getDb()->createCommand()
+    		->select('classname, count(id) objects')
+    		->from($this->_objects_name())
+			->group("classname")
+    		->queryAll();
+		if($rows)
+			foreach($rows as $row)
+				$list[$row['classname']] = $row['objects'];
+		return $list;			
+	}	
 	protected function createObject($classname, $data=null, $aux_id = null){
 		$this->getDb()->createCommand()->insert($this->_objects_name(),array(
 			'classname'=>$classname,'data'=>$data,'aux_id'=>$aux_id));
