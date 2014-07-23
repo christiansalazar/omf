@@ -11,7 +11,7 @@ require_once("OmfBase.php");
  * @license FREEBSD http://opensource.org/licenses/bsd-license.php
  */
 class OmfPdo extends OmfBase {
-	private $db;
+	protected $db;
 	
 	public function __construct(){
 		$this->getDb();

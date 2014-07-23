@@ -393,7 +393,7 @@ abstract class OmfBase {
 				$this->createRel($object_id, $newobj[0], $_metaname, "");
 			}
 			list($p_id, $p_classname) = $this->loadObject($object_id);
-			$this->setIndex($p_classname, $metaname, $metavalue, $object_id,$dbg);
+			$this->setIndex($p_classname, $metaname, $metavalue, $object_id,0);
 		}
 	}
 
