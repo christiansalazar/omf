@@ -1,5 +1,4 @@
 <?php
-require_once("../../../../wp-config.php");
 require_once("OmfPdo.php");
 class OmfTest extends OmfPdo {
 	private function log($what,$data){
@@ -416,7 +415,9 @@ class OmfTest extends OmfPdo {
 		printf("OK\n");
 	}
 }
+/*
 printf("OmfTest in progress..\n");
 $inst = new OmfTest();
 $inst->run();
 printf("\nend\n");
+*/

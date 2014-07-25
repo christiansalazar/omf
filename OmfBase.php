@@ -495,9 +495,15 @@ abstract class OmfBase {
 	 * @return array array("attr1"=>"value",...)
 	 */
 	public function getAttributes($object_id){
+		$object = $this->loadObject($object_id);
+		if(!$object)
+			return null;
 		$r=array();
 		foreach($this->listPropertys($object_id) as $property_name)
 			$r[$property_name] = $this->get($object_id, $property_name);
+		list($_id, $_cs) = $object;
+		if(!isset($r["id"])) $r["id"]=$object_id;
+		if(!isset($r["classname"])) $r["classname"]=$_cs;
 		return $r;
 	}
 }
