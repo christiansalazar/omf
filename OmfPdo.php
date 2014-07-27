@@ -112,6 +112,18 @@ class OmfPdo extends OmfBase {
 				'name'=>$name,'data'=>$data));
 		return $this->db->lastInsertId();
 	}
+	protected function findRel($from, $to, $name){
+		$st = $this->db->prepare(
+			sprintf("SELECT id from %s "
+				."WHERE parent=:parent and child=:child and name=:name",
+					$this->_relationship_name()));
+		$st->execute(array('parent'=>$from,'child'=>$to,'name'=>$name));
+		if($rows = $st->fetchAll(PDO::FETCH_ASSOC)){
+			foreach($rows as $row)
+				return $row['id']; // paranoic. but it is supposed to have only one.
+		}
+		return null;
+	}
 	public function loadRelation($id){
 		$stmt = $this->db->prepare(sprintf("SELECT * FROM %s WHERE id=:id",
 			$this->_relationship_name()));

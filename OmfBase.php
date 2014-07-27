@@ -37,6 +37,10 @@ abstract class OmfBase {
 	 * createObject 
 	 * 	abstract. store a new object.
 	 * 
+	 *	IMPORTANT:
+	 *		public usage, please use:  create(...)  instead of createObject
+	 *
+
 	 * @param string $classname 
 	 * @param string $data 
 	 * @param string $aux_id 
@@ -101,7 +105,9 @@ abstract class OmfBase {
 	 * @access protected
 	 * @return integer the new ID for this relationship
 	 */
+	// IMPORTANT: please use createRelation or deleteRelation.
 	abstract protected function createRel($from, $to, $name, $data="");
+	abstract protected function findRel($from, $to, $name); //ret id
 	abstract protected function deleteRel($id);
 	
 	/**
@@ -112,7 +118,7 @@ abstract class OmfBase {
 	 * @access public
 	 * @return array omf_relation returned by this->readRelation()
 	 */
-	abstract public function loadRelation($id);
+	abstract public function loadRelation($id); // see also: findRel
 
 	/**
 	 * listRel 
@@ -179,7 +185,7 @@ abstract class OmfBase {
 
 	/**
 	 * createRelation 
-	 * 	creates a relationship between two objects.
+	 * 	creates a unique relationship between two objects.
 	 *
 	 * @param mixed $parent array() or integer. if array: first entry must be id
 	 * @param mixed $child array or integer. if array: first entry must be id
@@ -192,7 +198,29 @@ abstract class OmfBase {
 		$parent_id = $parent; $child_id = $child;
 		if(is_array($parent)) list($parent_id) = $parent;
 		if(is_array($child)) list($child_id) = $child;
+		if($rel_id = $this->findRel($parent_id, $child_id, $rel_name))
+			return $rel_id;
 		return $this->createRel($parent_id, $child_id, $rel_name, $rel_data);
+	}
+	/**
+	 * deleteRelation 
+	 *	remove an existing relationship given its parent,child and name.	
+	 * 
+	 * @param mixed $parent 
+	 * @param mixed $child 
+	 * @param mixed $rel_name 
+	 * @access public
+	 * @return bool  true: successfully remove. false: non existing relationsh.
+	 */
+	public function deleteRelation($parent, $child, $rel_name){
+		$parent_id = $parent; $child_id = $child;
+		if(is_array($parent)) list($parent_id) = $parent;
+		if(is_array($child)) list($child_id) = $child;
+		if($rel_id = $this->findRel($parent_id, $child_id, $rel_name)){
+			$this->deleteRel($rel_id);
+			return true;
+		}else
+		return false;
 	}
 
 	/**
@@ -397,6 +425,19 @@ abstract class OmfBase {
 		}
 	}
 
+	public function safeUpdate($id, $attributes, $requiredClassname){
+		if($object = $this->loadObject($id)){
+			list($_id, $_cs) = $object;
+			if($_cs == $requiredClassname){
+				foreach(array("id","classname") as $attr)
+					if(isset($attributes[$attr]))
+						unset($attributes[$attr]);
+				$this->set($id, $attributes);
+			}
+		}else
+		return false;
+	}
+
 	/**
 	 * get 
 	 * 	read an attribute from a subject pointed by object_id
@@ -474,6 +515,8 @@ abstract class OmfBase {
 		$_metaname = $this->buildMetanameRel($metaname);
 		if($results = $this->findIndex($classname, $_metaname, md5($value),
 			$offset,$limit,$count_only)){
+			if(strstr($metaname,"_in_company_110") && (!$count_only))
+			throw new Exception(json_encode(array($results,$classname,$_metaname,$value,md5($value))));
 				if(true==$count_only)
 					return $results;
 			$objects = array();
@@ -506,4 +549,5 @@ abstract class OmfBase {
 		if(!isset($r["classname"])) $r["classname"]=$_cs;
 		return $r;
 	}
+
 }
