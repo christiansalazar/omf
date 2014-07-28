@@ -223,7 +223,7 @@ class OmfPdo extends OmfBase {
 		$stmt->bindValue(':id', $object_id, PDO::PARAM_INT);
 		$stmt->execute();
 		if($rows = $stmt->fetchAll(PDO::FETCH_ASSOC)){
-			return 1*$rows[0]["hashvalue"];
+			return $rows[0]["hashvalue"];
 		}else
 		return 0;
 	}

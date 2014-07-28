@@ -479,7 +479,7 @@ abstract class OmfBase {
 		$_metaname = $this->buildMetanameRel($metaname);
 		$hv = hash('md5',$metavalue);
 		$found_hv = $this->findIndexValue($classname, $_metaname, $object_id);
-		if($hv !== $found_hv){
+		if(!$found_hv){
 			$this->insertIndex($classname, $_metaname,$hv, $object_id);
 		}else{
 			$this->updateIndex($classname, $_metaname,$hv, $object_id);
