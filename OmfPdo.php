@@ -216,7 +216,7 @@ class OmfPdo extends OmfBase {
 	}	
 	public function findIndexValue($classname, $metaname, $object_id){
 		$stmt = $this->db->prepare(sprintf("SELECT hashvalue FROM %s "	
-			."where classname = :classname and metaname=:metaname and object_id=:id",
+			."where classname = :classname and metaname=:metaname and object_id=:id order by id desc",
 			$this->_index_name()));
 		$stmt->bindValue(':classname', $classname, PDO::PARAM_STR);
 		$stmt->bindValue(':metaname', $metaname, PDO::PARAM_STR);
@@ -226,5 +226,37 @@ class OmfPdo extends OmfBase {
 			return 1*$rows[0]["hashvalue"];
 		}else
 		return 0;
+	}
+	public function enumClassnames(){
+		$stmt = $this->db->prepare(sprintf(
+			"SELECT classname,count(id) objects FROM %s "	
+			."group by classname order by classname",
+			$this->_objects_name()));
+		$stmt->execute();
+		if($rows = $stmt->fetchAll(PDO::FETCH_ASSOC)){
+			$list = array();
+			foreach($rows as $row)
+				$list[$row['classname']] = $row['objects'];
+			return $list;
+		}else
+		return array();
+	}
+	public function rebuildIndexes(){
+		$stmt = $this->db->prepare(sprintf("DELETE FROM %s",
+			$this->_index_name()));
+		$stmt->execute();
+		//
+		$s1 = $this->db->prepare(sprintf(
+			"SELECT id,classname FROM %s",$this->_objects_name()));
+		$s1->execute();
+		while($data = $s1->fetch(PDO::FETCH_NUM, PDO::FETCH_ORI_NEXT)){
+			list($id, $classname) = $data;
+			$attributes = $this->getAttributes($id);
+			//printf("%s,%s...\n",$id,$classname);
+			foreach($attributes as $name=>$value){
+				//printf("\t%s = %s\n",$name,$value);
+				$this->setIndex($classname, $name, $value, $id);
+			}
+		}	
 	}
 }

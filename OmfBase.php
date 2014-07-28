@@ -90,6 +90,16 @@ abstract class OmfBase {
 	abstract public function listObjects($classname);
 
 	/**
+	 * enumClassnames
+	 *	return all the declared classes stored in the database.
+	 * 
+	 * @abstract
+	 * @access public
+	 * @return array   array('someclassname'=>123)  where 123 is number of objects found
+	 */
+	abstract public function enumClassnames();
+
+	/**
 	 * createRel 
 	 * 	abstract. store a new relationship between $from and $to, having $name. 
 	 *		in other words: from---[something]--->to
@@ -515,8 +525,6 @@ abstract class OmfBase {
 		$_metaname = $this->buildMetanameRel($metaname);
 		if($results = $this->findIndex($classname, $_metaname, md5($value),
 			$offset,$limit,$count_only)){
-			if(strstr($metaname,"_in_company_110") && (!$count_only))
-			throw new Exception(json_encode(array($results,$classname,$_metaname,$value,md5($value))));
 				if(true==$count_only)
 					return $results;
 			$objects = array();
@@ -549,5 +557,4 @@ abstract class OmfBase {
 		if(!isset($r["classname"])) $r["classname"]=$_cs;
 		return $r;
 	}
-
 }
