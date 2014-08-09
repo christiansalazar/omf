@@ -213,6 +213,39 @@ class OmfPdo extends OmfBase {
 			}	
 			return null;
 		}
+	}
+	public function findIndexMultiple($classname, $attributes,$offset=0, $limit=-1,$count_only=false){
+		if($limit==-1)
+			$limit=1000000;
+		$where = "";$or="";
+		foreach($attributes as $metaname=>$hashvalue){
+			$where .= sprintf(" %s (metaname = '%s' and hashvalue = :%s)",$or,$metaname,$metaname);
+			$or="OR";
+		}
+		if($where != "")
+			$where = " AND (".$where.")";
+		$matchcount = count($attributes);
+		$sql = sprintf("SELECT object_id, count(object_id) cc FROM %s "	
+			." where classname = :classname ".$where." group by object_id having cc >= %s LIMIT %s,%s"
+			,$this->_index_name(),$matchcount,$offset,$limit);
+		$stmt = $this->db->prepare($sql);
+		$stmt->bindValue(':classname', $classname, PDO::PARAM_STR);
+		foreach($attributes as $metaname=>$hashvalue)
+			$stmt->bindValue(':'.$metaname, $hashvalue, PDO::PARAM_STR);
+		//throw new Exception(json_encode(array("sql"=>$sql,"params"=>$attributes)));
+		$stmt->execute();
+		if(true==$count_only){
+			return $stmt->rowCount();
+		}else{
+			$data=null;
+			if($rows = $stmt->fetchAll(PDO::FETCH_ASSOC)){
+				$data = array();
+				foreach($rows as $row)
+					$data[] = $row["object_id"];
+				return $data;
+			}	
+			return null;
+		}
 	}	
 	public function findIndexValue($classname, $metaname, $object_id){
 		$stmt = $this->db->prepare(sprintf("SELECT hashvalue FROM %s "	
