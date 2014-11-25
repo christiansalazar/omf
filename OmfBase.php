@@ -633,6 +633,18 @@ abstract class OmfBase extends CApplicationComponent {
 		return $object;
 	}
 
+	public function getAttributes($object_id){
+		$omf_object = $this->loadObject($object_id);
+		if(empty($omf_object)) return null;
+		list($obj_id,$_classname,$aux,$data) = $omf_object;
+		$object['id'] = $obj_id;
+		$object['classname'] = $_classname;
+		$object['data'] = $data;
+		foreach($this->listPropertys($obj_id) as $attr)
+			$object[$attr] = $this->get($obj_id,$attr);
+		return $object;
+	}
+
 	protected function genid($id=0){
 		if($id > 0) return $id;
 		return microtime();
