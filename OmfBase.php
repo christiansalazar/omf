@@ -156,6 +156,7 @@ abstract class OmfBase {
 	abstract public function insertIndex($classname, $metaname, $hashvalue, $object_id);
 	abstract public function updateIndex($classname, $metaname, $hashvalue, $object_id);
 	abstract public function findIndex($classname, $metaname, $hashvalue, $offset=0, $limit=-1,$count_only=false);
+	abstract public function findIndexMultiple($classname, $attributes, $offset=0, $limit=-1,$count_only=false);
 	abstract public function findIndexValue($classname, $metaname, $object_id);
 
 	/**
@@ -519,7 +520,7 @@ abstract class OmfBase {
 		$_metaname = $this->buildMetanameRel($metaname);
 		$hv = hash('md5',$metavalue);
 		$found_hv = $this->findIndexValue($classname, $_metaname, $object_id);
-		if($hv !== $found_hv){
+		if(!$found_hv){
 			$this->insertIndex($classname, $_metaname,$hv, $object_id);
 		}else{
 			$this->updateIndex($classname, $_metaname,$hv, $object_id);
@@ -564,6 +565,24 @@ abstract class OmfBase {
 	public function findByAttribute($classname, $metaname, $value,$offset=0,$limit=-1,$count_only=false){
 		$_metaname = $this->buildMetanameRel($metaname);
 		if($results = $this->findIndex($classname, $_metaname, md5($value),
+			$offset,$limit,$count_only)){
+				if(true==$count_only)
+					return $results;
+			$objects = array();
+			foreach($results as $obj_id){
+				$objects[] = $this->loadObject($obj_id);
+			}
+			return $objects;
+		}
+		else
+		return null;
+	}
+
+	public function findByAttributes($classname, $attributes,$offset=0,$limit=-1,$count_only=false){
+		$attributes_ = array();
+		foreach($attributes as $name=>$value)
+			$attributes_[$this->buildMetanameRel($name)] = md5($value);
+		if($results = $this->findIndexMultiple($classname, $attributes_,
 			$offset,$limit,$count_only)){
 				if(true==$count_only)
 					return $results;
