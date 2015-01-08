@@ -391,6 +391,46 @@ abstract class OmfBase {
 	}
 
 	/**
+	 * left
+	 *   determine if B is in relationship with A, given conditions.
+	 *
+	 * given this scenario:
+	 *
+	 *	[A: Alpha]   [X: Alpha]  [Z: Beta]
+	 *		|         |            |
+	 *		|         |            |
+	 *		---------------------------{parent}---->[B: Someclass]
+	 *
+	 *  then determine if "A" is a "parent" of class "Alpha" for B.
+	 *
+	 *	call must be:
+	 *
+	 *		assert(true === $this->left($b, $a, "parent", "Alpha"));
+	 *		assert(true === $this->left($b, $x, "parent", "Alpha"));
+	 *		assert(false === $this->left($b, $z, "parent", "Alpha"));
+	 *		assert(true === $this->left($b, $z, "parent"));
+	 *
+	 * @param mixed $b (TARGET) object_id or omf_object
+	 * @param mixed $a (TEST) object_id or omf_object
+	 * @param string $relname  
+	 * @param string $classname 
+	 * @access public
+	 * @return boolean
+	 */
+	public function left($b, $a, $relname='parent', $classname=''){
+		$a_id = is_array($a) ? $a[0] : $a;
+		$b_id = is_array($b) ? $b[0] : $b;
+		if($parents = $this->getParents($b_id, $relname, $classname)){
+			foreach($parents as $some_parent){
+				list($some_parent_id) = $some_parent;
+				if($some_parent_id == $a)
+					return true;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * set 
 	 * 	a setter. it creates attributes for a given object.
 	 *
