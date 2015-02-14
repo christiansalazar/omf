@@ -444,12 +444,16 @@ abstract class OmfBase extends CApplicationComponent {
 				$this->set($object_id, $key, $value);
 		}else{
 			$_metaname = $this->buildMetanameRel($metaname);
-			if(null != 
-				($object = $this->getChild($object_id,$_metaname,'metadata'))){
-				$this->setObjectData($object[0],$metavalue);
-			}else{
+			$metadata_id = null;
+			$rels = $this->listRel($object_id, 'parent', $_metaname);	
+			if($rels)
+			foreach($rels as $rel){
+				$metadata_id = $rel['child'];
+				$this->setObjectData($metadata_id, $metavalue);
+			}
+			if(null === $metadata_id){
 				$newobj = $this->create("metadata", $metavalue, $object_id);
-				$this->createRel($object_id, $newobj[0], $_metaname, "");
+				$this->createRel($object_id, $newobj[0], $_metaname, "");	
 			}
 			list($p_id, $p_classname) = $this->loadObject($object_id);
 			$this->setIndex($p_classname, $_metaname, $metavalue, $object_id);
@@ -466,11 +470,15 @@ abstract class OmfBase extends CApplicationComponent {
 	 * @return string the metadata object.data
 	 */
 	public function get($object_id, $metaname, $defvalue=""){
-		$object = $this->getChild($object_id, 
-			$this->buildMetanameRel($metaname), "metadata");
-		if($object == null) return $defvalue;
-		list($id, $classname, $aux_id, $data) = $object;
-		return $data;
+		$rels = $this->listRel($object_id, 'parent', 
+			$this->buildMetanameRel($metaname));
+		if($rels)
+		foreach($rels as $rel){
+			$obj = $this->loadObject($rel['child']);
+			list($obj_id, $cs, $aux, $data) = $obj;
+			return $data;
+		}
+		return $defvalue;
 	}
 
 	/**
