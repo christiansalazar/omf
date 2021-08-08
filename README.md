@@ -3,7 +3,7 @@ Object Modeling Framework (OMF)
 
 [https://github.com/christiansalazar/omf.git](https://github.com/christiansalazar/omf.git "https://github.com/christiansalazar/omf.git")
 
-OMF is a framework for handle and persist objects, properties and 
+OMF is a database framework, it handle and persist objects, properties and 
 relationships between them having an abstract and unique persistence model for 
 all objects leaving you off the traditional data models.
 
